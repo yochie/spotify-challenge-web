@@ -1,0 +1,46 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home page";
+}
+
+<div class="text-center col-md-12">
+    <h1 class="display-4">Welcome</h1>
+    <div class="row col-md-4 offset-md-4">
+        <form method="post">
+            <div class="form-group">
+                <label asp-for="PlaylistId" class="control-label">Playlist ID</label> 
+                <input asp-for="PlaylistId" class="form-control" />
+            </div>
+            <div class="form-group">
+                <input type="submit" class="btn btn-primary" value="Get playlist data"/>
+            </div>
+        </form>
+    </div>
+</div>
+@if(Model.Error is not null){
+    <div class="alert alert-danger" role="alert">
+        @Model.Error
+    </div>
+}
+@* @if (Model.RawJsonResponse is not null){
+    @Model.RawJsonResponse
+} *@
+@if (Model.Playlist is not null){
+<h2>@Model.Playlist.Name by @Model.Playlist.OwnerId</h2>    
+<table class=table>
+    <thead><tr>
+        <th>Track</th>
+        <th>Artist</th>
+        <th>Album</th>
+    </tr></thead>
+    @foreach (var track in Model.Playlist.Tracks){
+        <tr>
+            <td>@track.Name</td>
+            <td>@track.Artists</td>
+            <td>@track.Album</td>
+        </tr>
+    }
+</table>
+}
+
