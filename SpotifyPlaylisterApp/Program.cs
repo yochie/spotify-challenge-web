@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using SpotifyPlaylistApp.Data;
 using SpotifyPlaylisterApp;
 using SpotifyPlaylisterApp.Requests;
+using Microsoft.AspNetCore.Identity;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -14,6 +15,11 @@ if (builder.Environment.IsDevelopment()){
     builder.Services.AddDbContext<SpotifyPlaylistAppContext> (options =>
         options.UseSqlServer(builder.Configuration.GetConnectionString("ProductionSpotifyPlaylisterAppContext")));
 }
+
+builder.Services.AddDefaultIdentity<IdentityUser>(
+        options => options.SignIn.RequireConfirmedAccount = true
+    )
+    .AddEntityFrameworkStores<SpotifyPlaylistAppContext>();
 
 IConfigurationRoot config = new ConfigurationBuilder()
     .SetBasePath(Directory.GetCurrentDirectory())
