@@ -6,7 +6,7 @@ namespace SpotifyPlaylisterApp.Requests {
     {
         PlaylistData IJsonParser<PlaylistData>.Parse(string data)
         { 
-            List<TrackData> trackData = new();
+            List<TrackData> trackData = [];
             var playlist = JsonConvert.DeserializeObject<PlaylistQueryResult>(data);
             if (playlist == null || playlist.Owner == null)
                 throw new Exception("couldnt parse json");
