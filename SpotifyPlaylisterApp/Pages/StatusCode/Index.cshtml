@@ -1,0 +1,15 @@
+﻿@page
+@model StatusCodeModel
+@{
+    ViewData["Title"] = "StatusCode";
+}
+
+<h1 class="text-danger">Status code</h1>
+<h2 class="text-danger">An error occurred while processing your request.</h2>
+
+@if (Model.ErrorStatusCode is not null)
+{
+    <p>
+        <strong>Status Code:</strong> <code>@Model.ErrorStatusCode</code>
+    </p>
+}

@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using SpotifyPlaylistApp.Data;
 using SpotifyPlaylisterApp;
 using SpotifyPlaylisterApp.Requests;
@@ -7,7 +6,10 @@ using Microsoft.AspNetCore.Identity;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddRazorPages();
+builder.Services.AddRazorPages(options => {
+    options.Conventions.AuthorizeFolder("/");
+});
+
 if (builder.Environment.IsDevelopment()){
     builder.Services.AddDbContext<SpotifyPlaylistAppContext>(options =>
         options.UseSqlite(builder.Configuration.GetConnectionString("SpotifyPlaylistAppContext") ?? throw new InvalidOperationException("Connection string 'SpotifyPlaylistAppContext' not found.")));
@@ -96,7 +98,7 @@ if (!app.Environment.IsDevelopment())
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
-
+app.UseStatusCodePagesWithReExecute("/StatusCode", "?statusCode={0}");
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
