@@ -3,6 +3,8 @@ using SpotifyPlaylistApp.Data;
 using SpotifyPlaylisterApp;
 using SpotifyPlaylisterApp.Requests;
 using Microsoft.AspNetCore.Identity;
+using SpotifyPlaylisterApp.Areas.Identity.Data;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -18,7 +20,7 @@ if (builder.Environment.IsDevelopment()){
         options.UseSqlServer(builder.Configuration.GetConnectionString("ProductionSpotifyPlaylisterAppContext")));
 }
 
-builder.Services.AddDefaultIdentity<IdentityUser>(
+builder.Services.AddDefaultIdentity<SpotifyPlaylisterUser>(
         options => options.SignIn.RequireConfirmedAccount = true
     )
     .AddEntityFrameworkStores<SpotifyPlaylistAppContext>();
@@ -69,24 +71,50 @@ Settings settings = config.GetRequiredSection("Settings").Get<Settings>() ?? thr
 builder.Services.AddHttpClient(SpotifyClientCredentialAuthentifier.httpClientName, client => {
     client.BaseAddress = new Uri(settings.AuthAPIAddress);
 });
-builder.Services.AddHttpClient(SpotifyClient.httpClientName, client => {
+builder.Services.AddHttpClient(SpotifyAuthorizationCodeAuthentifier.httpClientName, client => {
+    client.BaseAddress = new Uri(settings.AuthCodeAddress);
+});
+builder.Services.AddHttpClient(LoggedSpotifyClient.httpClientName, client => {
     client.BaseAddress = new Uri(settings.DataAPIAddress);
 });
-builder.Services.AddScoped<IAuthenticationProvider>(provider =>
-    new SpotifyClientCredentialAuthentifier(
-        settings.AuthAPIAddress,
-        settings.ClientID,
-        settings.Secret,
-        provider.GetService<IHttpClientFactory>()!
-    )
+
+builder.Services.AddSingleton<AuthenticatorResolver>(
+    provider =>
+        (anonymous) => {
+            if (anonymous){
+                return new SpotifyAuthorizationCodeAuthentifier(
+                                        settings.AuthCodeAddress,
+                                        settings.ClientID,
+                                        settings.Secret,
+                                        settings.RedirectUri,
+                                        provider.GetService<IHttpClientFactory>()!);
+
+            } else{
+                return new SpotifyClientCredentialAuthentifier(
+                                        settings.AuthAPIAddress,
+                                        settings.ClientID,
+                                        settings.Secret,
+                                        provider.GetService<IHttpClientFactory>()!);
+            }
+        }
 );
-builder.Services.AddScoped<ISpotifyClient>(provider => 
-    new SpotifyClient(
-        provider.GetService<IAuthenticationProvider>()!,
+
+builder.Services.AddScoped<IAnonymousSpotifyClient>(provider => 
+    new AnonymousSpotifyClient(
+        provider.GetRequiredService<AuthenticatorResolver>()(true),
         settings.DataAPIAddress,
-        provider.GetService<IHttpClientFactory>()!
+        provider.GetRequiredService<IHttpClientFactory>()
     )
 );
+
+builder.Services.AddScoped<ILoggedSpotifyClient>(provider => 
+    new LoggedSpotifyClient(
+        provider.GetRequiredService<AuthenticatorResolver>()(false),
+        settings.DataAPIAddress,
+        provider.GetRequiredService<IHttpClientFactory>()
+    )
+);
+
 builder.Services.AddSingleton<IJsonParser<PlaylistData>, PlaylistParser>();
 
 var app = builder.Build();
@@ -110,3 +138,7 @@ app.MapRazorPages();
 
 app.Run();
 
+namespace SpotifyPlaylisterApp
+{
+    public delegate IAuthenticationProvider AuthenticatorResolver(bool anonymous);
+}

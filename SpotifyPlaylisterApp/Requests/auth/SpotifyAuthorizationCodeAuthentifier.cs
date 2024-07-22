@@ -14,12 +14,23 @@ public class SpotifyAuthorizationCodeAuthentifier : IAuthenticationProvider
     private Dictionary<string, string> formData = new();
     private AuthenticationToken? token;
 
-    public SpotifyAuthorizationCodeAuthentifier(string endpoint, string clientID, string secret, IHttpClientFactory httpClientFactory)
+    public SpotifyAuthorizationCodeAuthentifier(string endpoint,
+                                                string clientID,
+                                                string secret,
+                                                string redirect_uri,
+                                                IHttpClientFactory httpClientFactory)
     {
         endPoint = new Uri(endpoint);
         formData["grant_type"] = "client_credentials";
+        formData["response_type"] = "code";
+        formData["redirect_uri"] = redirect_uri;
+        //TODO: enable state tracking for more security
+        //see https://datatracker.ietf.org/doc/html/rfc6749#section-4.1
+        //formData["state"] = ...
+        formData["scope"] = "playlist-read-private playlist-read-collaborative";
         formData["client_id"] = clientID;
         formData["client_secret"] = secret;
+        formData["show_dialog"] = "false";
         this.token = null;
         this.httpClientFactory = httpClientFactory;
     }

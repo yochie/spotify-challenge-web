@@ -4,11 +4,12 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using SpotifyPlaylisterApp.Areas.Identity.Data;
 using SpotifyPlaylisterApp.Models;
 
 namespace SpotifyPlaylistApp.Data
 {
-    public class SpotifyPlaylistAppContext : IdentityDbContext
+    public class SpotifyPlaylistAppContext : IdentityDbContext<SpotifyPlaylisterUser>
     {
         public SpotifyPlaylistAppContext (DbContextOptions<SpotifyPlaylistAppContext> options)
             : base(options)

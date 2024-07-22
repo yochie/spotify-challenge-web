@@ -15,12 +15,12 @@ public class IndexModel : PageModel
 {
     private readonly ILogger<IndexModel> _logger;
     private readonly SpotifyPlaylistAppContext _context;
-    private readonly ISpotifyClient spotify;
+    private readonly IAnonymousSpotifyClient spotify;
     private readonly IJsonParser<PlaylistData> parser;
 
     public IndexModel(ILogger<IndexModel> logger,
                       SpotifyPlaylistAppContext context,
-                      ISpotifyClient spotify,
+                      IAnonymousSpotifyClient spotify,
                       IJsonParser<PlaylistData> parser)
     {
         _logger = logger;

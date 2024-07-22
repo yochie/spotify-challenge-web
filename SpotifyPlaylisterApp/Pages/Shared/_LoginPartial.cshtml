@@ -1,7 +1,8 @@
 @using Microsoft.AspNetCore.Identity
+@using SpotifyPlaylisterApp.Areas.Identity.Data
 
-@inject SignInManager<IdentityUser> SignInManager
-@inject UserManager<IdentityUser> UserManager
+@inject SignInManager<SpotifyPlaylisterUser> SignInManager
+@inject UserManager<SpotifyPlaylisterUser> UserManager
 
 <ul class="navbar-nav">
 @if (SignInManager.IsSignedIn(User))
@@ -14,6 +15,10 @@
             <button id="logout" type="submit" class="nav-link btn btn-link text-dark border-0">Logout</button>
         </form>
     </li>
+    <li class="nav-item">
+        <a id="userplaylists" class="nav-link text-dark" asp-area="" asp-page="/MyPlaylists/Index" title="MyPlaylists">MyPlaylists</a>
+    </li>
+
 }
 else
 {
