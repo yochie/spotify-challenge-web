@@ -81,7 +81,7 @@ builder.Services.AddHttpClient(LoggedSpotifyClient.httpClientName, client => {
 builder.Services.AddSingleton<AuthenticatorResolver>(
     provider =>
         (anonymous) => {
-            if (anonymous){
+            if (!anonymous){
                 return new SpotifyAuthorizationCodeAuthentifier(
                                         settings.AuthCodeAddress,
                                         settings.ClientID,
