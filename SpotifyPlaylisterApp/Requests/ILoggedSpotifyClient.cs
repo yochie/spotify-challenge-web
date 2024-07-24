@@ -1,7 +1,11 @@
+using Microsoft.AspNetCore.Mvc.RazorPages;
+
 namespace SpotifyPlaylisterApp.Requests
 {
     public interface ILoggedSpotifyClient : ISpotifyClient
     {
-        List<string> GetUserPlaylistIds();
+        bool IsAuthenticated();
+        PageResult Authenticate();
+        Task<List<string>> GetUserPlaylistIdsAsync(HttpResponse? response);
     }
 }

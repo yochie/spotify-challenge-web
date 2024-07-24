@@ -1,6 +1,7 @@
 // See https://aka.ms/new-console-template for more information
 using System.Net;
 using SpotifyPlaylisterApp;
+using SpotifyPlaylisterApp.Requests.auth;
 
 namespace SpotifyPlaylisterApp.Requests
 {
@@ -22,11 +23,11 @@ namespace SpotifyPlaylisterApp.Requests
             this.httpClientFactory = httpClient;
         }
 
-        public async Task<string> GetPlaylist(string id)
+        public async Task<string> GetPlaylist(string id, HttpResponse? response = null)
         {
             using HttpClient httpClient = httpClientFactory.CreateClient(LoggedSpotifyClient.httpClientName);
             string fieldQuery = "fields=name,owner.id,tracks.items(track(name,artists(name),album(name)))";
-            string accessToken = await authentifier.GetAccessToken();
+            string accessToken = await authentifier.GetAccessToken(response);
             var msg = new HttpRequestMessage();
             msg.Headers.Add("Authorization", "Bearer " + accessToken);
             msg.Method = HttpMethod.Get;
@@ -35,13 +36,13 @@ namespace SpotifyPlaylisterApp.Requests
             uriBuilder.Query = fieldQuery;
             msg.RequestUri = uriBuilder.Uri;
             msg.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
-            var response = await httpClient.SendAsync(msg);
+            var apiResponse = await httpClient.SendAsync(msg);
 
-            if (response.StatusCode != HttpStatusCode.OK)
+            if (apiResponse.StatusCode != HttpStatusCode.OK)
             {
-                throw new Exception($"Couldn't request playlist data. Q: {msg.RequestUri}\n status : {response.StatusCode}");
+                throw new Exception($"Couldn't request playlist data. Q: {msg.RequestUri}\n status : {apiResponse.StatusCode}");
             }
-            return await response.Content.ReadAsStringAsync();
+            return await apiResponse.Content.ReadAsStringAsync();
         }
     }
 }

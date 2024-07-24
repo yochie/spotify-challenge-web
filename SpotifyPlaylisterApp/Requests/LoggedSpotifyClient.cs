@@ -1,6 +1,8 @@
 // See https://aka.ms/new-console-template for more information
 using System.Net;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using SpotifyPlaylisterApp;
+using SpotifyPlaylisterApp.Requests.auth;
 
 namespace SpotifyPlaylisterApp.Requests
 {
@@ -22,11 +24,20 @@ namespace SpotifyPlaylisterApp.Requests
             httpClientFactory = httpClient;
         }
 
-        public async Task<string> GetPlaylist(string id)
+        public bool IsAuthenticated()
         {
+            return false;
+        }
+
+        public PageResult Authenticate()
+        {
+            throw new NotImplementedException(); }
+
+        public async Task<string> GetPlaylist(string id, HttpResponse? response)
+        {
+            string accessToken = await authentifier.GetAccessToken(response);
             using HttpClient httpClient = httpClientFactory.CreateClient(httpClientName);
             string fieldQuery = "fields=name,owner.id,tracks.items(track(name,artists(name),album(name)))";
-            string accessToken = await authentifier.GetAccessToken();
             var msg = new HttpRequestMessage();
             msg.Headers.Add("Authorization", "Bearer " + accessToken);
             msg.Method = HttpMethod.Get;
@@ -35,20 +46,24 @@ namespace SpotifyPlaylisterApp.Requests
             uriBuilder.Query = fieldQuery;
             msg.RequestUri = uriBuilder.Uri;
             msg.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
-            var response = await httpClient.SendAsync(msg);
+            var apiResponse = await httpClient.SendAsync(msg);
 
-            if (response.StatusCode != HttpStatusCode.OK)
+            if (apiResponse.StatusCode != HttpStatusCode.OK)
             {
-                throw new Exception($"Couldn't request playlist data. Q: {msg.RequestUri}\n status : {response.StatusCode}");
+                throw new Exception($"Couldn't request playlist data. Q: {msg.RequestUri}\n status : {apiResponse.StatusCode}");
             }
-            return await response.Content.ReadAsStringAsync();
+            return await apiResponse.Content.ReadAsStringAsync();
             // JObject json = JObject.Parse(rawJsonResponse);
             // return json;
         }
 
-        public List<string> GetUserPlaylistIds()
+        public async Task<List<string>> GetUserPlaylistIdsAsync(HttpResponse? response)
         {
+            string accessToken = await authentifier.GetAccessToken(response);
+            if (accessToken == "")
+                return [];
             throw new NotImplementedException();
         }
+
     }
 }

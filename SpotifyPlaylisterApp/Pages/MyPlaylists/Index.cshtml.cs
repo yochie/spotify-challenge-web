@@ -1,15 +1,19 @@
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using Polly;
 using SpotifyPlaylistApp.Data;
 using SpotifyPlaylisterApp.Areas.Identity.Data;
 using SpotifyPlaylisterApp.Models;
 using SpotifyPlaylisterApp.Requests;
+using static OpenIddict.Client.WebIntegration.OpenIddictClientWebIntegrationConstants;
 
 
 namespace SpotifyPlaylisterApp.Pages.MyPlaylists
@@ -44,10 +48,20 @@ namespace SpotifyPlaylisterApp.Pages.MyPlaylists
             }
         }
 
+        public async Task<PageResult> OnPostAuth(){
+            await Results.Challenge(null, authenticationSchemes: [Providers.Spotify]).ExecuteAsync(HttpContext);
+            return Page();
+        }
+
         public async Task<PageResult> OnPostUpdate(){
+
+
             //Get list of playlists that user follows
-            //TODO implement
-            List<string> playlistIds = _spotify.GetUserPlaylistIds();
+            //redirects to spotify auth page
+            // if(!_spotify.IsAuthenticated())
+            //     return _spotify.Authenticate();
+
+            List<string> playlistIds = await _spotify.GetUserPlaylistIdsAsync(Response);
 
             //foreach followed playlist, update tracks
             await UpdatePlaylists(playlistIds);
@@ -62,7 +76,7 @@ namespace SpotifyPlaylisterApp.Pages.MyPlaylists
             foreach(string playlistId in playlistIds){
 
                 string RawJsonResponse = "";      
-                RawJsonResponse = await _spotify.GetPlaylist(playlistId);
+                RawJsonResponse = await _spotify.GetPlaylist(playlistId, Response);
                 var PlaylistData = _parser.Parse(RawJsonResponse);
                 //find corresponding playlist in db
 

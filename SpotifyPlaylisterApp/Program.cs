@@ -5,7 +5,14 @@ using SpotifyPlaylisterApp.Requests;
 using Microsoft.AspNetCore.Identity;
 using SpotifyPlaylisterApp.Areas.Identity.Data;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using SpotifyPlaylisterApp.Requests.auth;
 var builder = WebApplication.CreateBuilder(args);
+
+IConfigurationRoot config = new ConfigurationBuilder()
+    .SetBasePath(Directory.GetCurrentDirectory())
+    .AddJsonFile("settings.json")
+    .Build();
+Settings settings = config.GetRequiredSection("Settings").Get<Settings>() ?? throw new Exception("Bad config");
 
 // Add services to the container.
 builder.Services.AddRazorPages(options => {
@@ -13,17 +20,36 @@ builder.Services.AddRazorPages(options => {
 });
 
 if (builder.Environment.IsDevelopment()){
-    builder.Services.AddDbContext<SpotifyPlaylistAppContext>(options =>
-        options.UseSqlite(builder.Configuration.GetConnectionString("SpotifyPlaylistAppContext") ?? throw new InvalidOperationException("Connection string 'SpotifyPlaylistAppContext' not found.")));
+    builder.Services.AddDbContext<SpotifyPlaylistAppContext>(options => {
+        options.UseSqlite(builder.Configuration.GetConnectionString("SpotifyPlaylistAppContext") 
+            ?? throw new InvalidOperationException("Connection string 'SpotifyPlaylistAppContext' not found."));
+        options.UseOpenIddict();
+    });
 } else {
-    builder.Services.AddDbContext<SpotifyPlaylistAppContext> (options =>
-        options.UseSqlServer(builder.Configuration.GetConnectionString("ProductionSpotifyPlaylisterAppContext")));
+    builder.Services.AddDbContext<SpotifyPlaylistAppContext> (options => {
+        options.UseSqlServer(builder.Configuration.GetConnectionString("ProductionSpotifyPlaylisterAppContext"));
+        options.UseOpenIddict();
+    });
 }
 
 builder.Services.AddDefaultIdentity<SpotifyPlaylisterUser>(
         options => options.SignIn.RequireConfirmedAccount = true
     )
     .AddEntityFrameworkStores<SpotifyPlaylistAppContext>();
+
+builder.Services.AddOpenIddict().AddClient( options => {
+    options.AllowAuthorizationCodeFlow();
+    options.AddDevelopmentEncryptionCertificate().AddDevelopmentSigningCertificate();
+    options.UseAspNetCore().EnableRedirectionEndpointPassthrough();
+    options.UseWebProviders().AddSpotify(spotifyOptions => {
+        spotifyOptions.SetClientId(settings.ClientID)
+            .SetClientSecret(settings.Secret)
+            .SetRedirectUri(settings.RedirectUri);
+    });
+}).AddCore(options => {
+    options.UseEntityFrameworkCore().UseDbContext<SpotifyPlaylistAppContext>();
+});
+
 builder.Services.Configure<IdentityOptions>(options =>
 {
     // Password settings.
@@ -58,21 +84,16 @@ builder.Services.ConfigureApplicationCookie(options =>
 });
 
 
-IConfigurationRoot config = new ConfigurationBuilder()
-    .SetBasePath(Directory.GetCurrentDirectory())
-    .AddJsonFile("settings.json")
-    .Build();
-Settings settings = config.GetRequiredSection("Settings").Get<Settings>() ?? throw new Exception("Bad config");
 
 //need to implement new auth class so that it uses authorization code flow
 // builder.Services.AddHttpClient(SpotifyAuthorizationCodeAuthentifier.httpClientName, client => {
 //     client.BaseAddress = new Uri(settings.AuthAPIAddress);
 // });
 builder.Services.AddHttpClient(SpotifyClientCredentialAuthentifier.httpClientName, client => {
-    client.BaseAddress = new Uri(settings.AuthAPIAddress);
+    client.BaseAddress = new Uri(settings.AuthTokenEndPoint);
 });
 builder.Services.AddHttpClient(SpotifyAuthorizationCodeAuthentifier.httpClientName, client => {
-    client.BaseAddress = new Uri(settings.AuthCodeAddress);
+    client.BaseAddress = new Uri(settings.AuthCodeEndpoint);
 });
 builder.Services.AddHttpClient(LoggedSpotifyClient.httpClientName, client => {
     client.BaseAddress = new Uri(settings.DataAPIAddress);
@@ -83,7 +104,8 @@ builder.Services.AddSingleton<AuthenticatorResolver>(
         (anonymous) => {
             if (!anonymous){
                 return new SpotifyAuthorizationCodeAuthentifier(
-                                        settings.AuthCodeAddress,
+                                        new Uri(settings.AuthCodeEndpoint),
+                                        new Uri(settings.AuthTokenEndPoint),
                                         settings.ClientID,
                                         settings.Secret,
                                         settings.RedirectUri,
@@ -91,7 +113,7 @@ builder.Services.AddSingleton<AuthenticatorResolver>(
 
             } else{
                 return new SpotifyClientCredentialAuthentifier(
-                                        settings.AuthAPIAddress,
+                                        new Uri(settings.AuthTokenEndPoint),
                                         settings.ClientID,
                                         settings.Secret,
                                         provider.GetService<IHttpClientFactory>()!);
@@ -131,7 +153,7 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
-
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapRazorPages();

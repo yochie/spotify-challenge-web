@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using Newtonsoft.Json.Linq;
+using SpotifyPlaylisterApp.Requests.auth;
 namespace SpotifyPlaylisterApp;
 
 public class SpotifyClientCredentialAuthentifier : IAuthenticationProvider
@@ -11,12 +12,12 @@ public class SpotifyClientCredentialAuthentifier : IAuthenticationProvider
     private Dictionary<string, string> formData = new();
     private AuthenticationToken? token;
 
-    public SpotifyClientCredentialAuthentifier(string endpoint, string clientID, string secret, IHttpClientFactory httpClientFactory)
+    public SpotifyClientCredentialAuthentifier(Uri endpoint, string clientID, string secret, IHttpClientFactory httpClientFactory)
     {
-        endPoint = new Uri(endpoint);
-        formData["grant_type"] = "client_credentials";
-        formData["client_id"] = clientID;
-        formData["client_secret"] = secret;
+        this.endPoint = endpoint;
+        this.formData["grant_type"] = "client_credentials";
+        this.formData["client_id"] = clientID;
+        this.formData["client_secret"] = secret;
         this.token = null;
         this.httpClientFactory = httpClientFactory;
     }
@@ -24,7 +25,7 @@ public class SpotifyClientCredentialAuthentifier : IAuthenticationProvider
 
     //returns valid access token
     //will fetch new one if none gotten yet or expired
-    public async Task<string> GetAccessToken(){
+    public async Task<string> GetAccessToken(HttpResponse? response = null){
 
         if (token == null || token.Expired){
             token = await RequestNewAuthToken();
