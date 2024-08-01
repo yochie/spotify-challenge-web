@@ -5,16 +5,16 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using SpotifyPlaylistApp.Data;
+using SpotifyPlaylisterApp.Data;
 using SpotifyPlaylisterApp.Models;
 
 namespace SpotifyPlaylisterApp.Pages.SpotifyUsers
 {
     public class CreateModel : PageModel
     {
-        private readonly SpotifyPlaylistApp.Data.SpotifyPlaylistAppContext _context;
+        private readonly SpotifyPlaylisterAppContext _context;
 
-        public CreateModel(SpotifyPlaylistApp.Data.SpotifyPlaylistAppContext context)
+        public CreateModel(SpotifyPlaylisterAppContext context)
         {
             _context = context;
         }

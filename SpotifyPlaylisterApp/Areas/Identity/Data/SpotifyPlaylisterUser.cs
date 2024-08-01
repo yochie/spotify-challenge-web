@@ -12,6 +12,13 @@ namespace SpotifyPlaylisterApp.Areas.Identity.Data
     {
         [PersonalData]
         public List<Playlist> Playlists {get; set;} = [];
+
+        public string? SpotifyAccessToken {get; set;} 
+
+        public string? SpotifyRefreshToken {get; set;}
+
+        public DateTime? SpotifyAccessTokenExpiration {get; set;}
+
     }
 
 }

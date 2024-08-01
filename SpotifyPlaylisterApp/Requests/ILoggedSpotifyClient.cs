@@ -4,8 +4,9 @@ namespace SpotifyPlaylisterApp.Requests
 {
     public interface ILoggedSpotifyClient : ISpotifyClient
     {
-        bool IsAuthenticated();
-        PageResult Authenticate();
+        Task<bool> IsAuthorized();
         Task<List<string>> GetUserPlaylistIdsAsync(HttpResponse? response);
+        Task Challenge(HttpContext httpContext);
+        Task HandleAuthorizationCallback(HttpContext httpContext);
     }
 }

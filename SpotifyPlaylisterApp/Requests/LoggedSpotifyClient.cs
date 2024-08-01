@@ -1,8 +1,18 @@
 // See https://aka.ms/new-console-template for more information
 using System.Net;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.EntityFrameworkCore;
+using OpenIddict.Abstractions;
+using OpenIddict.Client.AspNetCore;
 using SpotifyPlaylisterApp;
-using SpotifyPlaylisterApp.Requests.auth;
+using SpotifyPlaylisterApp.Areas.Identity.Data;
+using SpotifyPlaylisterApp.Data;
+using SpotifyPlaylisterApp.Pages;
+using SpotifyPlaylisterApp.Requests.Auth;
+using static OpenIddict.Client.WebIntegration.OpenIddictClientWebIntegrationConstants;
 
 namespace SpotifyPlaylisterApp.Requests
 {
@@ -13,35 +23,38 @@ namespace SpotifyPlaylisterApp.Requests
     {
         //for use by http client factory
         public static readonly string httpClientName = "DataClient";
-        private readonly IAuthenticationProvider authentifier;
-        private readonly Uri endpoint;
-        private readonly IHttpClientFactory httpClientFactory;
+        private readonly IHttpContextAccessor _http;
+        private readonly SpotifyPlaylisterAppContext _context;
+        private readonly IAuthenticationProvider _authentifier;
+        private readonly Uri _endpoint;
+        private readonly IHttpClientFactory _httpClientFactory;
+        private readonly string _userId;
 
-        public LoggedSpotifyClient(IAuthenticationProvider authenticationProvider, string endpointUri, IHttpClientFactory httpClient)
+        public LoggedSpotifyClient(IHttpContextAccessor http, SpotifyPlaylisterAppContext context, IAuthenticationProvider authenticationProvider, string endpointUri, IHttpClientFactory httpClient, UserManager<SpotifyPlaylisterUser> userManager)
         {
-            authentifier = authenticationProvider;
-            endpoint = new Uri(endpointUri);
-            httpClientFactory = httpClient;
+            _http = http;
+            _context = context;
+            _authentifier = authenticationProvider;
+            _endpoint = new Uri(endpointUri);
+            _httpClientFactory = httpClient;
+            _userId = _http.HttpContext!.User.GetClaims(ClaimTypes.NameIdentifier).FirstOrDefault() ?? throw new UnauthorizedAccessException();
         }
 
-        public bool IsAuthenticated()
+        public async Task<bool> IsAuthorized()
         {
-            return false;
+            var user = await _context.Users.FirstAsync(u => u.Id == _userId);
+            return user.SpotifyAccessToken is not null;
         }
-
-        public PageResult Authenticate()
-        {
-            throw new NotImplementedException(); }
 
         public async Task<string> GetPlaylist(string id, HttpResponse? response)
         {
-            string accessToken = await authentifier.GetAccessToken(response);
-            using HttpClient httpClient = httpClientFactory.CreateClient(httpClientName);
+            string accessToken = await _authentifier.GetAccessToken();
+            using HttpClient httpClient = _httpClientFactory.CreateClient(httpClientName);
             string fieldQuery = "fields=name,owner.id,tracks.items(track(name,artists(name),album(name)))";
             var msg = new HttpRequestMessage();
             msg.Headers.Add("Authorization", "Bearer " + accessToken);
             msg.Method = HttpMethod.Get;
-            UriBuilder uriBuilder = new(endpoint);
+            UriBuilder uriBuilder = new(_endpoint);
             uriBuilder.Path += $"playlists/{id}";
             uriBuilder.Query = fieldQuery;
             msg.RequestUri = uriBuilder.Uri;
@@ -56,14 +69,53 @@ namespace SpotifyPlaylisterApp.Requests
             // JObject json = JObject.Parse(rawJsonResponse);
             // return json;
         }
-
         public async Task<List<string>> GetUserPlaylistIdsAsync(HttpResponse? response)
         {
-            string accessToken = await authentifier.GetAccessToken(response);
+            string accessToken = await _authentifier.GetAccessToken();
             if (accessToken == "")
                 return [];
             throw new NotImplementedException();
         }
 
+        public async Task Challenge(HttpContext httpContext)
+        {
+            var props = new AuthenticationProperties();
+            props.SetParameter<string>("scope", "playlist-read-private playlist-read-collaborative");
+            await Results.Challenge(props, authenticationSchemes: [Providers.Spotify]).ExecuteAsync(httpContext);
+        }
+
+        public async Task HandleAuthorizationCallback(HttpContext httpContext){
+            var result = await httpContext.AuthenticateAsync(Providers.Spotify);
+            if(result.Properties is null){
+                throw new InvalidOperationException();
+            }
+            var properties = result.Properties;
+            var tokens =  result.Properties.GetTokens();
+            var user = await _context.Users.FirstAsync(u => u.Id == _userId)
+                ?? throw new Exception("Couldn't identify current user.");
+            var accessTokenName = OpenIddictClientAspNetCoreConstants.Tokens.BackchannelAccessToken;
+            var accessToken = result.Properties.GetTokenValue(accessTokenName);
+            user.SpotifyAccessToken = accessToken;
+
+            var expirationName = OpenIddictClientAspNetCoreConstants.Tokens.BackchannelAccessTokenExpirationDate;
+            var expiration = result.Properties.GetTokenValue(expirationName)
+                ?? throw new Exception("access token expiration undefined");
+            user.SpotifyAccessTokenExpiration = DateTime.Parse(expiration);
+
+            var refreshTokenName = OpenIddictClientAspNetCoreConstants.Tokens.RefreshToken;
+            var refreshToken = result.Properties.GetTokenValue(refreshTokenName);
+            user.SpotifyRefreshToken = refreshToken;
+
+             _context.Attach(user).State = EntityState.Modified;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                    throw;
+            }
+        }
     }
 }

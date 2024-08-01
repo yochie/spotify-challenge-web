@@ -1,8 +1,8 @@
 // See https://aka.ms/new-console-template for more information
-namespace SpotifyPlaylisterApp.Requests.auth
+namespace SpotifyPlaylisterApp.Requests.Auth
 {
     public interface IAuthenticationProvider
     {
-        public Task<string> GetAccessToken(HttpResponse? response = null);
+        public Task<string> GetAccessToken();
     }
 }

@@ -7,5 +7,5 @@
 <h1>Spotify auth</h1>
 
 <p>
-    @Model.AuthResult
+    @Html.Raw(System.Web.HttpUtility.HtmlEncode(Model.AuthResult)!.Replace("\n", "<br/>"))
 </p>

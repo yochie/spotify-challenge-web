@@ -4,13 +4,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using SpotifyPlaylistApp.Data;
+using SpotifyPlaylisterApp.Data;
 
 #nullable disable
 
 namespace SpotifyPlaylisterApp.Migrations
 {
-    [DbContext(typeof(SpotifyPlaylistAppContext))]
+    [DbContext(typeof(SpotifyPlaylisterAppContext))]
     [Migration("20240724154803_OpenIddict")]
     partial class OpenIddict
     {

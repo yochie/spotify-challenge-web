@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SpotifyPlaylisterApp.Data;
 
@@ -10,9 +11,11 @@ using SpotifyPlaylisterApp.Data;
 namespace SpotifyPlaylisterApp.Migrations
 {
     [DbContext(typeof(SpotifyPlaylisterAppContext))]
-    partial class SpotifyPlaylistAppContextModelSnapshot : ModelSnapshot
+    [Migration("20240731184932_userTokensExpiration")]
+    partial class userTokensExpiration
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.7");
@@ -391,6 +394,9 @@ namespace SpotifyPlaylisterApp.Migrations
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("INTEGER");
 
+                    b.Property<DateTimeOffset?>("Expiration")
+                        .HasColumnType("TEXT");
+
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("INTEGER");
 
@@ -418,9 +424,6 @@ namespace SpotifyPlaylisterApp.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("SpotifyAccessToken")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime?>("SpotifyAccessTokenExpiration")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("SpotifyRefreshToken")

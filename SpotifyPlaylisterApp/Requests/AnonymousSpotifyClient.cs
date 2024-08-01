@@ -1,7 +1,7 @@
 // See https://aka.ms/new-console-template for more information
 using System.Net;
 using SpotifyPlaylisterApp;
-using SpotifyPlaylisterApp.Requests.auth;
+using SpotifyPlaylisterApp.Requests.Auth;
 
 namespace SpotifyPlaylisterApp.Requests
 {
@@ -27,7 +27,7 @@ namespace SpotifyPlaylisterApp.Requests
         {
             using HttpClient httpClient = httpClientFactory.CreateClient(LoggedSpotifyClient.httpClientName);
             string fieldQuery = "fields=name,owner.id,tracks.items(track(name,artists(name),album(name)))";
-            string accessToken = await authentifier.GetAccessToken(response);
+            string accessToken = await authentifier.GetAccessToken();
             var msg = new HttpRequestMessage();
             msg.Headers.Add("Authorization", "Bearer " + accessToken);
             msg.Method = HttpMethod.Get;

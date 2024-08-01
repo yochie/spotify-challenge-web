@@ -1,7 +1,6 @@
 ﻿using System.Net;
 using Newtonsoft.Json.Linq;
-using SpotifyPlaylisterApp.Requests.auth;
-namespace SpotifyPlaylisterApp;
+namespace SpotifyPlaylisterApp.Requests.Auth;
 
 public class SpotifyClientCredentialAuthentifier : IAuthenticationProvider
 {
@@ -14,20 +13,22 @@ public class SpotifyClientCredentialAuthentifier : IAuthenticationProvider
 
     public SpotifyClientCredentialAuthentifier(Uri endpoint, string clientID, string secret, IHttpClientFactory httpClientFactory)
     {
-        this.endPoint = endpoint;
-        this.formData["grant_type"] = "client_credentials";
-        this.formData["client_id"] = clientID;
-        this.formData["client_secret"] = secret;
-        this.token = null;
+        endPoint = endpoint;
+        formData["grant_type"] = "client_credentials";
+        formData["client_id"] = clientID;
+        formData["client_secret"] = secret;
+        token = null;
         this.httpClientFactory = httpClientFactory;
     }
 
 
     //returns valid access token
     //will fetch new one if none gotten yet or expired
-    public async Task<string> GetAccessToken(HttpResponse? response = null){
+    public async Task<string> GetAccessToken()
+    {
 
-        if (token == null || token.Expired){
+        if (token == null || token.Expired)
+        {
             token = await RequestNewAuthToken();
         }
         return token.AccessToken;
@@ -35,16 +36,18 @@ public class SpotifyClientCredentialAuthentifier : IAuthenticationProvider
 
     private async Task<AuthenticationToken> RequestNewAuthToken()
     {
-        using HttpClient httpClient = httpClientFactory.CreateClient(SpotifyClientCredentialAuthentifier.httpClientName);
+        using HttpClient httpClient = httpClientFactory.CreateClient(httpClientName);
         HttpResponseMessage response = await httpClient.PostAsync(endPoint, new FormUrlEncodedContent(formData));
-        if (response.StatusCode != HttpStatusCode.OK){
+        if (response.StatusCode != HttpStatusCode.OK)
+        {
             throw new Exception($"Couldn't request authentication from API. Status : {response.StatusCode}");
         }
         var rawJsonResponse = await response.Content.ReadAsStringAsync();
         JObject json = JObject.Parse(rawJsonResponse);
-        string? accessToken = (string?) json["access_token"];
-        int? tokenSeconds = (int?) json["expires_in"];
-        if (accessToken == null || tokenSeconds == null){
+        string? accessToken = (string?)json["access_token"];
+        int? tokenSeconds = (int?)json["expires_in"];
+        if (accessToken == null || tokenSeconds == null)
+        {
             throw new Exception("Couldn't parse authentication response");
         }
         return new AuthenticationToken(accessToken, (int)tokenSeconds);

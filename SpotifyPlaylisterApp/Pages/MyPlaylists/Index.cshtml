@@ -9,7 +9,9 @@
 <p>
    <form asp-page-handler="upate" method="post">
         <button class="btn btn-primary" asp-page-handler="Update">Update</button>
-        <button class="btn btn-primary" asp-page-handler="Auth">Authorize spotify</button>
+        @if(!Model.SpotifyAuthorized || true){
+            <button class="btn btn-primary" asp-page-handler="Auth">Authorize spotify</button>
+        }
    </form> 
 </p>
 <table class="table">

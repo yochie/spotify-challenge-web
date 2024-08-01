@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using NuGet.Protocol;
-using SpotifyPlaylistApp.Data;
+using SpotifyPlaylisterApp.Data;
 using SpotifyPlaylisterApp.Models;
 using SpotifyPlaylisterApp.Requests;
 using SQLitePCL;
@@ -14,12 +14,12 @@ namespace SpotifyPlaylisterApp.Pages;
 public class IndexModel : PageModel
 {
     private readonly ILogger<IndexModel> _logger;
-    private readonly SpotifyPlaylistAppContext _context;
+    private readonly SpotifyPlaylisterAppContext _context;
     private readonly IAnonymousSpotifyClient spotify;
     private readonly IJsonParser<PlaylistData> parser;
 
     public IndexModel(ILogger<IndexModel> logger,
-                      SpotifyPlaylistAppContext context,
+                      SpotifyPlaylisterAppContext context,
                       IAnonymousSpotifyClient spotify,
                       IJsonParser<PlaylistData> parser)
     {

@@ -6,16 +6,16 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using SpotifyPlaylistApp.Data;
+using SpotifyPlaylisterApp.Data;
 using SpotifyPlaylisterApp.Models;
 
 namespace SpotifyPlaylisterApp.Pages.PlaylistTracks
 {
     public class EditModel : PageModel
     {
-        private readonly SpotifyPlaylistApp.Data.SpotifyPlaylistAppContext _context;
+        private readonly SpotifyPlaylisterAppContext _context;
 
-        public EditModel(SpotifyPlaylistApp.Data.SpotifyPlaylistAppContext context)
+        public EditModel(SpotifyPlaylisterAppContext context)
         {
             _context = context;
         }

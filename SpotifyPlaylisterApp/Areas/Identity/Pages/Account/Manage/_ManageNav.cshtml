@@ -1,4 +1,3 @@
-@using SpotifyPlaylisterApp.Areas.Identity.Data
 @inject SignInManager<SpotifyPlaylisterUser> SignInManager
 @{
     var hasExternalLogins = (await SignInManager.GetExternalAuthenticationSchemesAsync()).Any();
