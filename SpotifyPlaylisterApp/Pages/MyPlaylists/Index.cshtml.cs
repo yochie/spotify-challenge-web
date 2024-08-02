@@ -59,11 +59,7 @@ namespace SpotifyPlaylisterApp.Pages.MyPlaylists
 
 
             //Get list of playlists that user follows
-            //redirects to spotify auth page
-            // if(!_spotify.IsAuthenticated())
-            //     return _spotify.Authenticate();
-
-            List<string> playlistIds = await _spotify.GetUserPlaylistIdsAsync(Response);
+            List<string> playlistIds = await _spotify.GetUserPlaylistIdsAsync(HttpContext);
 
             //foreach followed playlist, update tracks
             await UpdatePlaylists(playlistIds);

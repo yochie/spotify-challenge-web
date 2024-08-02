@@ -136,6 +136,7 @@ builder.Services.AddScoped<ILoggedSpotifyClient>(provider =>
         provider.GetRequiredService<SpotifyPlaylisterAppContext>(),
         provider.GetRequiredService<AuthenticatorResolver>()(false),
         settings.DataAPIAddress,
+        settings.Scopes,
         provider.GetRequiredService<IHttpClientFactory>(),
         provider.GetRequiredService<UserManager<SpotifyPlaylisterUser>>()
     )

@@ -6,4 +6,5 @@ internal sealed class Settings {
     public required string Secret { get; set;}
     public required string DataAPIAddress { get; set;}
     public required string RedirectUri {get; set;}
+    public required string[] Scopes {get; set;}
 }

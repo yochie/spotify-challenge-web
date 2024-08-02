@@ -26,15 +26,23 @@ namespace SpotifyPlaylisterApp.Requests
         private readonly IHttpContextAccessor _http;
         private readonly SpotifyPlaylisterAppContext _context;
         private readonly IAuthenticationProvider _authentifier;
+        private readonly string[] scopes;
         private readonly Uri _endpoint;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly string _userId;
 
-        public LoggedSpotifyClient(IHttpContextAccessor http, SpotifyPlaylisterAppContext context, IAuthenticationProvider authenticationProvider, string endpointUri, IHttpClientFactory httpClient, UserManager<SpotifyPlaylisterUser> userManager)
+        public LoggedSpotifyClient(IHttpContextAccessor http,
+                                   SpotifyPlaylisterAppContext context,
+                                   IAuthenticationProvider authenticationProvider,
+                                   string endpointUri,
+                                   string[] scopes,
+                                   IHttpClientFactory httpClient,
+                                   UserManager<SpotifyPlaylisterUser> userManager)
         {
             _http = http;
             _context = context;
             _authentifier = authenticationProvider;
+            this.scopes = scopes;
             _endpoint = new Uri(endpointUri);
             _httpClientFactory = httpClient;
             _userId = _http.HttpContext!.User.GetClaims(ClaimTypes.NameIdentifier).FirstOrDefault() ?? throw new UnauthorizedAccessException();
@@ -69,18 +77,40 @@ namespace SpotifyPlaylisterApp.Requests
             // JObject json = JObject.Parse(rawJsonResponse);
             // return json;
         }
-        public async Task<List<string>> GetUserPlaylistIdsAsync(HttpResponse? response)
+        public async Task<List<string>> GetUserPlaylistIdsAsync(HttpContext context)
         {
-            string accessToken = await _authentifier.GetAccessToken();
-            if (accessToken == "")
-                return [];
             throw new NotImplementedException();
+            return [];
+            // string accessToken;
+            // try{
+            //     accessToken = await _authentifier.GetAccessToken();
+            // } catch {
+            //     return [];
+            // }
+
+            // using HttpClient httpClient = _httpClientFactory.CreateClient(httpClientName);
+            // string fieldQuery = "";
+            // var msg = new HttpRequestMessage();
+            // msg.Headers.Add("Authorization", "Bearer " + accessToken);
+            // msg.Method = HttpMethod.Get;
+            // UriBuilder uriBuilder = new(_endpoint);
+            // uriBuilder.Path += $"me/playlists";
+            // uriBuilder.Query = fieldQuery;
+            // msg.RequestUri = uriBuilder.Uri;
+            // msg.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+            // var apiResponse = await httpClient.SendAsync(msg);
+
+            // if (apiResponse.StatusCode != HttpStatusCode.OK)
+            // {
+            //     throw new Exception($"Couldn't request playlist data. Q: {msg.RequestUri}\n status : {apiResponse.StatusCode}");
+            // }
+            // return await apiResponse.Content.ReadAsStringAsync();
         }
 
         public async Task Challenge(HttpContext httpContext)
         {
             var props = new AuthenticationProperties();
-            props.SetParameter<string>("scope", "playlist-read-private playlist-read-collaborative");
+            props.SetParameter<string>("scope", scopes.Aggregate("", (str, next) => str + " " + next));
             await Results.Challenge(props, authenticationSchemes: [Providers.Spotify]).ExecuteAsync(httpContext);
         }
 
