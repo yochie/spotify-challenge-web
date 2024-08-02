@@ -73,7 +73,6 @@ namespace SpotifyPlaylisterApp.Pages.MyPlaylists
             return Page();
         }
 
-        //TODO : complete code
         private async Task UpdatePlaylists(List<string> playlistIds)
         {
            // throw new NotImplementedException();

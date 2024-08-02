@@ -57,8 +57,6 @@ public class IndexModel : PageModel
         } catch {
             Error = "Problem parsing results.";
         }
-        //todo : fetch actual request instead
-        //Playlist = await _context.Playlist.Include(p => p.Tracks).FirstAsync();
         return Page();
     }
 }
