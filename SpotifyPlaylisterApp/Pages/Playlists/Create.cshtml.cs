@@ -23,10 +23,6 @@ namespace SpotifyPlaylisterApp.Pages.Playlists
 
         public IActionResult OnGet()
         {
-            ViewData["SpotifyUserId"] = new SelectList(
-                _context.SpotifyUser.AsNoTracking(), 
-                nameof(SpotifyUser.Id), 
-                nameof(SpotifyUser.Name));
             return Page();
         }
 

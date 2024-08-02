@@ -15,11 +15,14 @@ namespace SpotifyPlaylisterApp.Requests {
                 string artists = track.Artists.Select(a => a.Name).Aggregate((a, b) => a + " / " + b);
                 trackData.Add(new TrackData(track.Name, track.Album.Name, artists));
             }
-            PlaylistData playlistData = new(playlist.Name, playlist.Owner.Id, trackData);
+            PlaylistData playlistData = new(playlist.Id,
+                                            playlist.Name,
+                                            playlist.Owner.Name ?? playlist.Owner.Id,
+                                            trackData);
             return playlistData;
         }
     }
 
     public record TrackData(string Name, string Album, string Artists);
-    public record PlaylistData(string Name, string OwnerId, IEnumerable<TrackData> Tracks);
+    public record PlaylistData(string Id, string Name, string OwnerName, IEnumerable<TrackData> Tracks);
 }

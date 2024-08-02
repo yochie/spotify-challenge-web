@@ -5,27 +5,149 @@
     ViewData["Title"] = "Details";
 }
 
-<h1>Details</h1>
+@if (Model.Playlist is not null){
+<h2>@Model.Playlist.Name by @Model.Playlist.SpotifyOwnerName</h2>    
+<table class=table>
+    <thead><tr>
+        <th>Track</th>
+        <th>Artist</th>
+        <th>Album</th>
+    </tr></thead>
+    @foreach (var track in Model.Playlist.Tracks){
+        <tr>
+            <td>@track.Title</td>
+            <td>@track.Artists</td>
+            <td>@track.Album</td>
+        </tr>
+    }
+</table>
+<button type="button" class="btn btn-primary" onclick="tableToCSV()">
+    download CSV
+</button>
+}
+@* Todo move to centralized location and remove duplicates*@
+<script type="text/javascript">
+    function tableToCSV() {
 
-<div>
-    <h4>Playlist</h4>
-    <hr />
-    <dl class="row">
-        <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.Playlist.Name)
-        </dt>
-        <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.Playlist.Name)
-        </dd>
-        <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.Playlist.SpotifyUser!.Name)
-        </dt>
-        <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.Playlist.SpotifyUser!.Name)
-        </dd>
-    </dl>
-</div>
-<div>
-    <a asp-page="./Edit" asp-route-id="@Model.Playlist.Id">Edit</a> |
-    <a asp-page="./Index">Back to List</a>
-</div>
+        // Variable to store the final csv data
+        let csv_data = [];
+
+        // Get each row data
+        let rows = document.getElementsByTagName('tr');
+        for (let i = 0; i < rows.length; i++) {
+
+            // Get each column data
+            let cols = rows[i].querySelectorAll('td,th');
+
+            // Stores each csv row data
+            let csvrow = [];
+            for (let j = 0; j < cols.length; j++) {
+
+                // Get the text data of each cell
+                // of a row and push it to csvrow
+                //following https://owasp.org/www-community/attacks/CSV_Injection
+                //apparently breaks Libre Office calc csv import (leading single quote gets doubled)
+                //seems fine in google sheets so sticking to proper safe format
+                csvrow.push('"\'' + cols[j].innerText.replaceAll('"', '""') + '"');
+            }
+
+            // Combine each column value with comma
+            csv_data.push(csvrow.join(","));
+        }
+
+        // Combine each row data with new line character
+        csv_data = csv_data.join('\n');
+
+        // Call this function to download csv file  
+        downloadCSVFile(csv_data);
+
+    }
+
+    function downloadCSVFile(csv_data) {
+
+        // Create CSV file object and feed
+        // our csv_data into it
+        CSVFile = new Blob([csv_data], {
+            type: "text/csv"
+        });@* Todo move to centralized location *@
+<script type="text/javascript">
+    function tableToCSV() {
+
+        // Variable to store the final csv data
+        let csv_data = [];
+
+        // Get each row data
+        let rows = document.getElementsByTagName('tr');
+        for (let i = 0; i < rows.length; i++) {
+
+            // Get each column data
+            let cols = rows[i].querySelectorAll('td,th');
+
+            // Stores each csv row data
+            let csvrow = [];
+            for (let j = 0; j < cols.length; j++) {
+
+                // Get the text data of each cell
+                // of a row and push it to csvrow
+                //following https://owasp.org/www-community/attacks/CSV_Injection
+                //apparently breaks Libre Office calc csv import (leading single quote gets doubled)
+                //seems fine in google sheets so sticking to proper safe format
+                csvrow.push('"\'' + cols[j].innerText.replaceAll('"', '""') + '"');
+            }
+
+            // Combine each column value with comma
+            csv_data.push(csvrow.join(","));
+        }
+
+        // Combine each row data with new line character
+        csv_data = csv_data.join('\n');
+
+        // Call this function to download csv file  
+        downloadCSVFile(csv_data);
+
+    }
+
+    function downloadCSVFile(csv_data) {
+
+        // Create CSV file object and feed
+        // our csv_data into it
+        CSVFile = new Blob([csv_data], {
+            type: "text/csv"
+        });
+
+        // Create to temporary link to initiate
+        // download process
+        let temp_link = document.createElement('a');
+
+        // Download csv file
+        temp_link.download = "Playlist.csv";
+        let url = window.URL.createObjectURL(CSVFile);
+        temp_link.href = url;
+
+        // This link should not be displayed
+        temp_link.style.display = "none";
+        document.body.appendChild(temp_link);
+
+        // Automatically click the link to
+        // trigger download
+        temp_link.click();
+        document.body.removeChild(temp_link);
+    }
+</script>
+k = document.createElement('a');
+
+        // Download csv file
+        temp_link.download = "Playlist.csv";
+        let url = window.URL.createObjectURL(CSVFile);
+        temp_link.href = url;
+
+        // This link should not be displayed
+        temp_link.style.display = "none";
+        document.body.appendChild(temp_link);
+
+        // Automatically click the link to
+        // trigger download
+        temp_link.click();
+        document.body.removeChild(temp_link);
+    }
+</script>

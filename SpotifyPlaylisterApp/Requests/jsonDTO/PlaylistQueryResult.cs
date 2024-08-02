@@ -6,6 +6,9 @@ internal class PlaylistQueryResult
 {
     [JsonProperty("tracks")]
     required internal TracksQueryResult Tracks { get; set; }
+
+    [JsonProperty("id")]
+    required internal string Id {get; set;}
     
     [JsonProperty("name")]
     required internal string Name {get; set;}

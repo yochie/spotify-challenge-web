@@ -9,10 +9,14 @@ public class Playlist
 {
     public int Id { get; set; }
 
+    [DisplayName("Playlist ID")]
+    public string SpotifyId { get; set; } = "";
+
     [DisplayName("Playlist Name")]
     public string Name { get; set; } = "";
-    public int SpotifyUserId { get; set; }
-    public virtual SpotifyUser? SpotifyUser { get; set; }
+    public string SpotifyOwnerName { get; set; } = "";
     public virtual ICollection<PlaylistTrack> Tracks { get; } = new List<PlaylistTrack>();
+
+    //link to user account on site
     public List<SpotifyPlaylisterUser> SpotifyPlaylisterUsers {get;  set;} = [];
 }

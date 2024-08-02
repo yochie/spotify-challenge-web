@@ -27,7 +27,7 @@
     @Model.RawJsonResponse
 } *@
 @if (Model.Playlist is not null){
-<h2>@Model.Playlist.Name by @Model.Playlist.OwnerId</h2>    
+<h2>@Model.Playlist.Name by @Model.Playlist.OwnerName</h2>    
 <table class=table>
     <thead><tr>
         <th>Track</th>
@@ -46,6 +46,7 @@
     download CSV
 </button>
 }
+@* Todo move to centralized location *@
 <script type="text/javascript">
     function tableToCSV() {
 

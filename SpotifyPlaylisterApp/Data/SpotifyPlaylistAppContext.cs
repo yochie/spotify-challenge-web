@@ -16,7 +16,6 @@ namespace SpotifyPlaylisterApp.Data
         {
         }
 
-        public DbSet<SpotifyUser> SpotifyUser { get; set; } = default!;
         public DbSet<Playlist> Playlist { get; set; } = default!;
         public DbSet<PlaylistTrack> PlaylistTrack { get; set; } = default!;
     }

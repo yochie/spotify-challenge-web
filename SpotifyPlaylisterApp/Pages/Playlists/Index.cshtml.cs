@@ -24,7 +24,7 @@ namespace SpotifyPlaylisterApp.Pages.Playlists
         public async Task OnGetAsync()
         {
             Playlist = await _context.Playlist
-                .Include(p => p.SpotifyUser).ToListAsync();
+                .ToListAsync();
         }
     }
 }

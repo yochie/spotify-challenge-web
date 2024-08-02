@@ -28,7 +28,7 @@ namespace SpotifyPlaylisterApp.Pages.Playlists
                 return NotFound();
             }
 
-            var playlist = await _context.Playlist.Include(p => p.SpotifyUser).FirstOrDefaultAsync(m => m.Id == id);
+            var playlist = await _context.Playlist.Include(p => p.Tracks).FirstOrDefaultAsync(m => m.Id == id);
             if (playlist == null)
             {
                 return NotFound();

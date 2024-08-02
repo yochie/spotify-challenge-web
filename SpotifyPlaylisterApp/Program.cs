@@ -6,6 +6,7 @@ using SpotifyPlaylisterApp.Areas.Identity.Data;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using SpotifyPlaylisterApp.Requests.Auth;
 using SpotifyPlaylisterApp.Data;
+using SpotifyPlaylisterApp.Pages.MyPlaylists;
 var builder = WebApplication.CreateBuilder(args);
 
 IConfigurationRoot config = new ConfigurationBuilder()
@@ -143,6 +144,8 @@ builder.Services.AddScoped<ILoggedSpotifyClient>(provider =>
 );
 
 builder.Services.AddSingleton<IJsonParser<PlaylistData>, PlaylistParser>();
+
+builder.Services.AddSingleton<IJsonParser<PlaylistIdList>, PlaylistIdParser>();
 
 var app = builder.Build();
 

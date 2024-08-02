@@ -36,7 +36,6 @@ namespace SpotifyPlaylisterApp.Pages.Playlists
                 return NotFound();
             }
             Playlist = playlist;
-           ViewData["SpotifyUserId"] = new SelectList(_context.SpotifyUser, "Id", "Id");
             return Page();
         }
 

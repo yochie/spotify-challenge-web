@@ -20,11 +20,6 @@
                 <span asp-validation-for="Playlist.Name" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="Playlist.SpotifyUserId" class="control-label"></label>
-                <select asp-for="Playlist.SpotifyUserId" class="form-control" asp-items="ViewBag.SpotifyUserId"></select>
-                <span asp-validation-for="Playlist.SpotifyUserId" class="text-danger"></span>
-            </div>
-            <div class="form-group">
                 <input type="submit" value="Save" class="btn btn-primary" />
             </div>
         </form>

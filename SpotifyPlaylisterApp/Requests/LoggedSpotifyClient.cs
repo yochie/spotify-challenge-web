@@ -58,7 +58,7 @@ namespace SpotifyPlaylisterApp.Requests
         {
             string accessToken = await _authentifier.GetAccessToken();
             using HttpClient httpClient = _httpClientFactory.CreateClient(httpClientName);
-            string fieldQuery = "fields=name,owner.id,tracks.items(track(name,artists(name),album(name)))";
+            string fieldQuery = "fields=id,name,owner.id,owner.display_name,tracks.items(track(name,artists(name),album(name)))";
             var msg = new HttpRequestMessage();
             msg.Headers.Add("Authorization", "Bearer " + accessToken);
             msg.Method = HttpMethod.Get;
@@ -77,34 +77,28 @@ namespace SpotifyPlaylisterApp.Requests
             // JObject json = JObject.Parse(rawJsonResponse);
             // return json;
         }
-        public async Task<List<string>> GetUserPlaylistIdsAsync(HttpContext context)
+
+        public async Task<string> GetUserPlaylistIdsAsync(HttpContext context)
         {
-            throw new NotImplementedException();
-            return [];
-            // string accessToken;
-            // try{
-            //     accessToken = await _authentifier.GetAccessToken();
-            // } catch {
-            //     return [];
-            // }
+            string accessToken;
+            accessToken = await _authentifier.GetAccessToken();
+            using HttpClient httpClient = _httpClientFactory.CreateClient(httpClientName);
+            string fieldQuery = "";
+            var msg = new HttpRequestMessage();
+            msg.Headers.Add("Authorization", "Bearer " + accessToken);
+            msg.Method = HttpMethod.Get;
+            UriBuilder uriBuilder = new(_endpoint);
+            uriBuilder.Path += $"me/playlists";
+            uriBuilder.Query = fieldQuery;
+            msg.RequestUri = uriBuilder.Uri;
+            msg.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+            var apiResponse = await httpClient.SendAsync(msg);
 
-            // using HttpClient httpClient = _httpClientFactory.CreateClient(httpClientName);
-            // string fieldQuery = "";
-            // var msg = new HttpRequestMessage();
-            // msg.Headers.Add("Authorization", "Bearer " + accessToken);
-            // msg.Method = HttpMethod.Get;
-            // UriBuilder uriBuilder = new(_endpoint);
-            // uriBuilder.Path += $"me/playlists";
-            // uriBuilder.Query = fieldQuery;
-            // msg.RequestUri = uriBuilder.Uri;
-            // msg.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
-            // var apiResponse = await httpClient.SendAsync(msg);
-
-            // if (apiResponse.StatusCode != HttpStatusCode.OK)
-            // {
-            //     throw new Exception($"Couldn't request playlist data. Q: {msg.RequestUri}\n status : {apiResponse.StatusCode}");
-            // }
-            // return await apiResponse.Content.ReadAsStringAsync();
+            if (apiResponse.StatusCode != HttpStatusCode.OK)
+            {
+                throw new Exception($"Couldn't request playlist data. Q: {msg.RequestUri}\n status : {apiResponse.StatusCode}");
+            }
+            return await apiResponse.Content.ReadAsStringAsync();
         }
 
         public async Task Challenge(HttpContext httpContext)
