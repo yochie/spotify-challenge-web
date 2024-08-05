@@ -13,7 +13,13 @@ namespace SpotifyPlaylisterApp.Requests {
 
             foreach (var track in playlist.Tracks.Items.Select(i => i.Track)) {
                 string artists = track.Artists.Select(a => a.Name).Aggregate((a, b) => a + " / " + b);
-                trackData.Add(new TrackData(track.Name, track.Album.Name, artists, track.SpotifyId));
+                //for users own music, no ids are provided
+                //combine the main track data in that case to make up an id
+                //if there are multiple tracks with identical main track info, they will be merged in db
+                //probably safer to ignore them...
+                //todo : find better solution...
+                string spotifyId = track.SpotifyId ?? track.Name + "%" + artists + "%" + track.Album.Name;
+                trackData.Add(new TrackData(track.Name, track.Album.Name, artists, spotifyId));
             }
             PlaylistData playlistData = new(playlist.Id,
                                             playlist.Name,
@@ -23,9 +29,7 @@ namespace SpotifyPlaylisterApp.Requests {
         }
     }
 
-    public record TrackData(string Name, string Album, string Artists, string SpotifyId)
-    {
-    }
+    public record TrackData(string Name, string Album, string Artists, string SpotifyId);
 
     public record PlaylistData(string Id, string Name, string OwnerName, IEnumerable<TrackData> Tracks);
 }
