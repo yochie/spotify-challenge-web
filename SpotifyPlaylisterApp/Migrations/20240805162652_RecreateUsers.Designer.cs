@@ -11,8 +11,8 @@ using SpotifyPlaylisterApp.Data;
 namespace SpotifyPlaylisterApp.Migrations
 {
     [DbContext(typeof(SpotifyPlaylisterAppContext))]
-    [Migration("20240731190800_userTokensExpirationTyped")]
-    partial class userTokensExpirationTyped
+    [Migration("20240805162652_RecreateUsers")]
+    partial class RecreateUsers
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -458,12 +458,15 @@ namespace SpotifyPlaylisterApp.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("SpotifyUserId")
-                        .HasColumnType("INTEGER");
+                    b.Property<string>("SpotifyId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SpotifyOwnerName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("SpotifyUserId");
 
                     b.ToTable("Playlist");
                 });
@@ -488,6 +491,10 @@ namespace SpotifyPlaylisterApp.Migrations
                     b.Property<int>("Rating")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("SpotifyId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -497,21 +504,6 @@ namespace SpotifyPlaylisterApp.Migrations
                     b.HasIndex("PlaylistId");
 
                     b.ToTable("PlaylistTrack");
-                });
-
-            modelBuilder.Entity("SpotifyPlaylisterApp.Models.SpotifyUser", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("SpotifyUser");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -604,17 +596,6 @@ namespace SpotifyPlaylisterApp.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("SpotifyPlaylisterApp.Models.Playlist", b =>
-                {
-                    b.HasOne("SpotifyPlaylisterApp.Models.SpotifyUser", "SpotifyUser")
-                        .WithMany("Playlists")
-                        .HasForeignKey("SpotifyUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("SpotifyUser");
-                });
-
             modelBuilder.Entity("SpotifyPlaylisterApp.Models.PlaylistTrack", b =>
                 {
                     b.HasOne("SpotifyPlaylisterApp.Models.Playlist", "Playlist")
@@ -641,11 +622,6 @@ namespace SpotifyPlaylisterApp.Migrations
             modelBuilder.Entity("SpotifyPlaylisterApp.Models.Playlist", b =>
                 {
                     b.Navigation("Tracks");
-                });
-
-            modelBuilder.Entity("SpotifyPlaylisterApp.Models.SpotifyUser", b =>
-                {
-                    b.Navigation("Playlists");
                 });
 #pragma warning restore 612, 618
         }
