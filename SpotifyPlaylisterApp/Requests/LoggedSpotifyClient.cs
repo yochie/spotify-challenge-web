@@ -74,8 +74,6 @@ namespace SpotifyPlaylisterApp.Requests
                 throw new Exception($"Couldn't request playlist data. Q: {msg.RequestUri}\n status : {apiResponse.StatusCode}");
             }
             return await apiResponse.Content.ReadAsStringAsync();
-            // JObject json = JObject.Parse(rawJsonResponse);
-            // return json;
         }
 
         public async Task<string> GetUserPlaylistIdsAsync(HttpContext context)
