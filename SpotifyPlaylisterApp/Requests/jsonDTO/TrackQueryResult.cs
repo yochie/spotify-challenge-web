@@ -4,6 +4,9 @@ namespace SpotifyPlaylisterApp;
 
 internal class TrackQueryResult
 {
+    [JsonProperty("id")]
+    required public string SpotifyId { get; set; }
+
     [JsonProperty("name")]
     required public string Name { get; set; }
 

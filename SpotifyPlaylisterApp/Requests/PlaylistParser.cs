@@ -13,7 +13,7 @@ namespace SpotifyPlaylisterApp.Requests {
 
             foreach (var track in playlist.Tracks.Items.Select(i => i.Track)) {
                 string artists = track.Artists.Select(a => a.Name).Aggregate((a, b) => a + " / " + b);
-                trackData.Add(new TrackData(track.Name, track.Album.Name, artists));
+                trackData.Add(new TrackData(track.Name, track.Album.Name, artists, track.SpotifyId));
             }
             PlaylistData playlistData = new(playlist.Id,
                                             playlist.Name,
@@ -23,6 +23,9 @@ namespace SpotifyPlaylisterApp.Requests {
         }
     }
 
-    public record TrackData(string Name, string Album, string Artists);
+    public record TrackData(string Name, string Album, string Artists, string SpotifyId)
+    {
+    }
+
     public record PlaylistData(string Id, string Name, string OwnerName, IEnumerable<TrackData> Tracks);
 }

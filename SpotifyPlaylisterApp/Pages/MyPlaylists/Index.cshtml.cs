@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Data.Common;
 using System.Linq;
 using System.Media;
 using System.Text.Encodings.Web;
@@ -60,23 +61,25 @@ namespace SpotifyPlaylisterApp.Pages.MyPlaylists
         }
 
         public async Task<PageResult> OnPostUpdate(){
-
-
             //Get list of playlists that user follows
-            string playlistIds = await _spotify.GetUserPlaylistIdsAsync(HttpContext);
+            string playlistIdsJson = await _spotify.GetUserPlaylistIdsAsync(HttpContext);
 
-            List<string> parsed = _playlistIdParser.Parse(playlistIds).List;
+            List<string> freshPlaylistIds = _playlistIdParser.Parse(playlistIdsJson).List;
 
+            var user = await _context.Users
+                .Include(u => u.Playlists)
+                .FirstOrDefaultAsync(u => u.Id == _userManager.GetUserId(User)) ?? throw new UnauthorizedAccessException();
+            List<string> dbPlaylistIds = user.Playlists.Select(p => p.SpotifyId).ToList();
             //foreach followed playlist, update tracks
-            await UpdatePlaylists(parsed);
+            await UpdateUserPlaylists(freshPlaylistIds, dbPlaylistIds);
 
             return Page();
         }
 
-        private async Task UpdatePlaylists(List<string> playlistIds)
+        private async Task UpdateUserPlaylists(List<string> freshPlaylistIds, List<string> dbPlaylistIds)
         {
-           // throw new NotImplementedException();
-            foreach(string playlistId in playlistIds){
+            //create missing playlists and update existing ones
+            foreach(string playlistId in freshPlaylistIds){
 
                 string RawJsonResponse = "";      
                 RawJsonResponse = await _spotify.GetPlaylist(playlistId, Response);
@@ -86,17 +89,42 @@ namespace SpotifyPlaylisterApp.Pages.MyPlaylists
                 var dbPlaylist = await _context.Playlist.FirstOrDefaultAsync(p => p.SpotifyId == playlistId);
 
                 if (dbPlaylist is not null){
-                    UpdatePlaylistTracks(dbPlaylist, PlaylistData);
+                    UpdatePlaylist(dbPlaylist, PlaylistData);
                 } else {
                     CreatePlaylist(PlaylistData);
+                }
+            }
+            //delete removed playlists
+            foreach(string dbPlaylistId in dbPlaylistIds){
+                if(!freshPlaylistIds.Contains(dbPlaylistId)){
+                    var toRemove = await _context.Playlist.FirstAsync(p => p.SpotifyId == dbPlaylistId);
+                    _context.Remove(toRemove);
                 }
             }
             await _context.SaveChangesAsync();
         }
 
-        private void UpdatePlaylistTracks(Playlist dbPlaylist, PlaylistData playlistData)
+        private void UpdatePlaylist(Playlist dbPlaylist, PlaylistData freshPlaylistData)
         {
-            throw new NotImplementedException();
+            dbPlaylist.Name = freshPlaylistData.Name;
+            dbPlaylist.SpotifyOwnerName = freshPlaylistData.OwnerName;
+            foreach(TrackData freshTrack in freshPlaylistData.Tracks){
+                var dbTrack = dbPlaylist.Tracks.FirstOrDefault(dbTrack => dbTrack.SpotifyId == freshTrack.SpotifyId);
+                if(dbTrack is not null){
+                   dbTrack.Title = freshTrack.Name;
+                   dbTrack.Album = freshTrack.Album;
+                   dbTrack.Artists = freshTrack.Artists;
+                } else {
+                    CreateTrack(dbPlaylist, freshTrack);
+                }
+            }
+
+            foreach(PlaylistTrack dbTrack in dbPlaylist.Tracks){
+                var stillExists = freshPlaylistData.Tracks.Any(freshTrack => freshTrack.SpotifyId == dbTrack.SpotifyId);
+                if(!stillExists){
+                    _context.Remove(dbTrack);
+                }
+            }
         }
 
         private async void CreatePlaylist(PlaylistData playlistData){
@@ -123,15 +151,20 @@ namespace SpotifyPlaylisterApp.Pages.MyPlaylists
         private void CreatePlaylistTracks(Playlist playlist, IEnumerable<TrackData> tracksData)
         {
             foreach(var trackData in tracksData){
-                var track = new PlaylistTrack{
-                    Playlist = playlist,
-                    Title = trackData.Name,
-                    Album = trackData.Album,
-                    Artists = trackData.Artists
-                };
-
-                _context.Add(track);
+                CreateTrack(playlist, trackData);
             }
+        }
+
+        private void CreateTrack(Playlist playlist, TrackData trackData){
+            var track = new PlaylistTrack{
+                SpotifyId = trackData.SpotifyId,
+                Playlist = playlist,
+                Title = trackData.Name,
+                Album = trackData.Album,
+                Artists = trackData.Artists
+            };
+
+            _context.Add(track);
         }
     }
 

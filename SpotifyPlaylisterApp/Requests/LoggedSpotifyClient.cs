@@ -58,7 +58,7 @@ namespace SpotifyPlaylisterApp.Requests
         {
             string accessToken = await _authentifier.GetAccessToken();
             using HttpClient httpClient = _httpClientFactory.CreateClient(httpClientName);
-            string fieldQuery = "fields=id,name,owner.id,owner.display_name,tracks.items(track(name,artists(name),album(name)))";
+            string fieldQuery = "fields=id,name,owner.id,owner.display_name,tracks.items(track(id,name,artists(name),album(name)))";
             var msg = new HttpRequestMessage();
             msg.Headers.Add("Authorization", "Bearer " + accessToken);
             msg.Method = HttpMethod.Get;
