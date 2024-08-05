@@ -51,7 +51,9 @@ builder.Services.AddOpenIddict()
         options.AddDevelopmentEncryptionCertificate().AddDevelopmentSigningCertificate();
         options.UseAspNetCore()
             .EnableRedirectionEndpointPassthrough()
-            .EnableStatusCodePagesIntegration();
+            .EnableStatusCodePagesIntegration()
+            .DisableAutomaticAuthenticationSchemeForwarding();
+            
         options.UseSystemNetHttp();
         options.UseWebProviders().AddSpotify(spotifyOptions => {
             spotifyOptions.SetClientId(settings.ClientID)
