@@ -7,10 +7,12 @@ using System.Media;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Polly;
 using SpotifyPlaylisterApp.Areas.Identity.Data;
 using SpotifyPlaylisterApp.Data;
@@ -23,6 +25,7 @@ namespace SpotifyPlaylisterApp.Pages.MyPlaylists
 {
     public class UserPlaylistsModel : PageModel
     {
+        public string Error {get; set;} = "";
         private readonly SpotifyPlaylisterAppContext _context;
         private readonly UserManager<SpotifyPlaylisterUser> _userManager;
         private readonly ILoggedSpotifyClient _spotify;
@@ -60,9 +63,15 @@ namespace SpotifyPlaylisterApp.Pages.MyPlaylists
             return Page();
         }
 
-        public async Task<PageResult> OnPostUpdate(){
+        public async Task OnPostUpdate(){
             //Get list of playlists that user follows
-            string playlistIdsJson = await _spotify.GetUserPlaylistIdsAsync(HttpContext);
+            string  playlistIdsJson;
+            try {
+                playlistIdsJson = await _spotify.GetUserPlaylistIdsAsync(HttpContext);
+            } catch {
+                Error = "Error getting playlists. Maybe reauthorize?";
+                return;
+            }
 
             List<string> freshPlaylistIds = _playlistIdParser.Parse(playlistIdsJson).List;
 
@@ -73,7 +82,7 @@ namespace SpotifyPlaylisterApp.Pages.MyPlaylists
             //foreach followed playlist, update tracks
             await UpdateUserPlaylists(freshPlaylistIds, dbPlaylistIds);
 
-            return Page();
+            Response.Redirect(Request.GetEncodedUrl());
         }
 
         private async Task UpdateUserPlaylists(List<string> freshPlaylistIds, List<string> dbPlaylistIds)
@@ -86,7 +95,7 @@ namespace SpotifyPlaylisterApp.Pages.MyPlaylists
                 var PlaylistData = _parser.Parse(RawJsonResponse);
 
                 //find corresponding playlist in db
-                var dbPlaylist = await _context.Playlist.FirstOrDefaultAsync(p => p.SpotifyId == playlistId);
+                var dbPlaylist = await _context.Playlist.Include(p => p.Tracks).FirstOrDefaultAsync(p => p.SpotifyId == playlistId);
 
                 if (dbPlaylist is not null){
                     UpdatePlaylist(dbPlaylist, PlaylistData);
@@ -108,6 +117,8 @@ namespace SpotifyPlaylisterApp.Pages.MyPlaylists
         {
             dbPlaylist.Name = freshPlaylistData.Name;
             dbPlaylist.SpotifyOwnerName = freshPlaylistData.OwnerName;
+
+            List<PlaylistTrack> toAdd = new ();
             foreach(TrackData freshTrack in freshPlaylistData.Tracks){
                 var dbTrack = dbPlaylist.Tracks.FirstOrDefault(dbTrack => dbTrack.SpotifyId == freshTrack.SpotifyId);
                 if(dbTrack is not null){
@@ -115,14 +126,19 @@ namespace SpotifyPlaylisterApp.Pages.MyPlaylists
                    dbTrack.Album = freshTrack.Album;
                    dbTrack.Artists = freshTrack.Artists;
                 } else {
-                    CreateTrack(dbPlaylist, freshTrack);
+                    var newTrack = CreateTrack(dbPlaylist, freshTrack);
+                    if(newTrack is null || toAdd.Any(pt => pt.SpotifyId == newTrack.SpotifyId))
+                        //skip duplicates
+                        continue;
+                    toAdd.Add(newTrack);
                 }
             }
+            _context.PlaylistTrack.AddRange(toAdd);
 
             foreach(PlaylistTrack dbTrack in dbPlaylist.Tracks){
                 var stillExists = freshPlaylistData.Tracks.Any(freshTrack => freshTrack.SpotifyId == dbTrack.SpotifyId);
                 if(!stillExists){
-                    _context.Remove(dbTrack);
+                    _context.PlaylistTrack.Remove(dbTrack);
                 }
             }
         }
@@ -150,12 +166,28 @@ namespace SpotifyPlaylisterApp.Pages.MyPlaylists
 
         private void CreatePlaylistTracks(Playlist playlist, IEnumerable<TrackData> tracksData)
         {
+            List<PlaylistTrack> toAdd = new();
             foreach(var trackData in tracksData){
-                CreateTrack(playlist, trackData);
+                var newTrack = CreateTrack(playlist, trackData);
+                if (newTrack is null || toAdd.Any(pt => pt.SpotifyId == newTrack.SpotifyId))
+                    //ignore duplicates
+                    continue;
+                toAdd.Add(newTrack);
             }
+            _context.PlaylistTrack.AddRange(toAdd);
         }
 
-        private void CreateTrack(Playlist playlist, TrackData trackData){
+        //returns db object to create
+        //callers should ensure the batch of created tracks contain no duplicates before saving
+        private PlaylistTrack? CreateTrack(Playlist playlist, TrackData trackData){
+            if(trackData.SpotifyId.IsNullOrEmpty())
+                throw new Exception("trackData without id");
+            if(_context.PlaylistTrack.Any(pt => pt.SpotifyId == trackData.SpotifyId)){
+                //we will ignore duplicates by design here
+                //we would need to track ordering otherwise
+                //todo change if i want to add order tracking
+                return null;
+            }
             var track = new PlaylistTrack{
                 SpotifyId = trackData.SpotifyId,
                 Playlist = playlist,
@@ -163,8 +195,7 @@ namespace SpotifyPlaylisterApp.Pages.MyPlaylists
                 Album = trackData.Album,
                 Artists = trackData.Artists
             };
-
-            _context.Add(track);
+            return track;
         }
     }
 
