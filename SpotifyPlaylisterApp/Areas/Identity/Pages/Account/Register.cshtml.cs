@@ -22,6 +22,7 @@ using SpotifyPlaylisterApp.Areas.Identity.Data;
 
 namespace SpotifyPlaylisterApp.Areas.Identity.Pages.Account
 {
+    [AllowAnonymous]
     public class RegisterModel : PageModel
     {
         private readonly SignInManager<SpotifyPlaylisterUser> _signInManager;

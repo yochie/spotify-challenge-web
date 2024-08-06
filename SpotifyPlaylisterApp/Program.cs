@@ -7,6 +7,8 @@ using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using SpotifyPlaylisterApp.Requests.Auth;
 using SpotifyPlaylisterApp.Data;
 using SpotifyPlaylisterApp.Pages.MyPlaylists;
+using System.Net;
+using Microsoft.AspNetCore.Authorization;
 var builder = WebApplication.CreateBuilder(args);
 
 IConfigurationRoot config = new ConfigurationBuilder()
@@ -17,7 +19,7 @@ Settings settings = config.GetRequiredSection("Settings").Get<Settings>() ?? thr
 
 // Add services to the container.
 builder.Services.AddRazorPages(options => {
-    options.Conventions.AuthorizeFolder("/");
+//    options.Conventions.AuthorizeFolder("/");
 });
 
 builder.Services.AddHttpContextAccessor();
@@ -36,10 +38,16 @@ if (builder.Environment.IsDevelopment()){
 }
 
 builder.Services.AddDefaultIdentity<SpotifyPlaylisterUser>(
-        options => options.SignIn.RequireConfirmedAccount = true
-
+        options => { options.SignIn.RequireConfirmedAccount = true; }
     )
+    .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<SpotifyPlaylisterAppContext>();
+
+builder.Services.AddAuthorization(options => {
+    options.FallbackPolicy = new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
+});
 
 builder.Services.AddOpenIddict()
     .AddCore(options => {
