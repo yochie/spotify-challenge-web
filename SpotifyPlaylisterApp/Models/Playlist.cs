@@ -17,6 +17,6 @@ public class Playlist
     public string SpotifyOwnerName { get; set; } = "";
     public virtual ICollection<PlaylistTrack> Tracks { get; } = new List<PlaylistTrack>();
 
-    //link to user account on site
+    //link to local user account
     public List<SpotifyPlaylisterUser> SpotifyPlaylisterUsers {get;  set;} = [];
 }
