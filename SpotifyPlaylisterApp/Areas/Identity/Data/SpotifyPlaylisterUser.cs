@@ -18,7 +18,5 @@ namespace SpotifyPlaylisterApp.Areas.Identity.Data
         public string? SpotifyRefreshToken {get; set;}
 
         public DateTime? SpotifyAccessTokenExpiration {get; set;}
-
     }
-
 }
