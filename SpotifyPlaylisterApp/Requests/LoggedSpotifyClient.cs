@@ -76,7 +76,7 @@ namespace SpotifyPlaylisterApp.Requests
             return await apiResponse.Content.ReadAsStringAsync();
         }
 
-        public async Task<string> GetUserPlaylistIdsAsync(HttpContext context)
+        public async Task<string> GetUserPlaylistIdsAsync()
         {
             string accessToken;
             accessToken = await _authentifier.GetAccessToken();

@@ -67,7 +67,7 @@ namespace SpotifyPlaylisterApp.Pages.MyPlaylists
             //Get list of playlists that user follows
             string  playlistIdsJson;
             try {
-                playlistIdsJson = await _spotify.GetUserPlaylistIdsAsync(HttpContext);
+                playlistIdsJson = await _spotify.GetUserPlaylistIdsAsync();
             } catch {
                 Error = "Error getting playlists. Maybe reauthorize?";
                 return;
