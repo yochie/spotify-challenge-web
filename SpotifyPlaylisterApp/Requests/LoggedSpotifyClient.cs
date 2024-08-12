@@ -89,15 +89,10 @@ namespace SpotifyPlaylisterApp.Requests
             accessToken = await _authentifier.GetAccessToken();
             using HttpClient httpClient = _httpClientFactory.CreateClient(httpClientName);
             string fieldQuery = "limit=50";
-            var msg = new HttpRequestMessage();
-            msg.Headers.Add("Authorization", "Bearer " + accessToken);
-            msg.Method = HttpMethod.Get;
             UriBuilder uriBuilder = new(_endpoint);
             uriBuilder.Path += $"me/playlists";
             uriBuilder.Query = fieldQuery;
-            msg.RequestUri = uriBuilder.Uri;
-            msg.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
-
+            var msg = BuildMessage(uriBuilder.Uri, accessToken);
             List<string> playlistIdList = new();
             PlaylistIdList queryResult;
             do {
@@ -111,10 +106,19 @@ namespace SpotifyPlaylisterApp.Requests
                 queryResult = playlistIdParser.Parse(json);
                 playlistIdList.AddRange(queryResult.List);
                 if(queryResult.NextPage != ""){
-                    msg.RequestUri = new Uri(queryResult.NextPage);
+                    msg = BuildMessage(new Uri(queryResult.NextPage), accessToken);
                 }
             } while(queryResult.NextPage != "");
             return playlistIdList;
+        }
+        
+        private HttpRequestMessage BuildMessage(Uri uri, string accessToken){
+            var msg = new HttpRequestMessage();
+            msg.Headers.Add("Authorization", "Bearer " + accessToken);
+            msg.Method = HttpMethod.Get;
+            msg.RequestUri = uri;
+            msg.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+            return msg;
         }
 
         public async Task Challenge(HttpContext httpContext)
