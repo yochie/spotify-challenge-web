@@ -7,6 +7,6 @@ internal class OwnerQueryResult
     [JsonProperty("id")]
     required internal string Id {get; set;}
 
-    [JsonProperty("name")]
+    [JsonProperty("display_name")]
     required internal string Name {get; set;}
 }
