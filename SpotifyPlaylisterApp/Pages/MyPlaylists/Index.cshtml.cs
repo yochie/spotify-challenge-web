@@ -65,15 +65,13 @@ namespace SpotifyPlaylisterApp.Pages.MyPlaylists
 
         public async Task OnPostUpdate(){
             //Get list of playlists that user follows
-            string  playlistIdsJson;
+            List<string> freshPlaylistIds;
             try {
-                playlistIdsJson = await _spotify.GetUserPlaylistIdsAsync();
-            } catch {
-                Error = "Error getting playlists. Maybe reauthorize?";
+                freshPlaylistIds = await _spotify.GetUserPlaylistIdsAsync();
+            } catch (Exception e){
+                Error = e.Message;
                 return;
             }
-
-            List<string> freshPlaylistIds = _playlistIdParser.Parse(playlistIdsJson).List;
 
             var user = await _context.Users
                 .Include(u => u.Playlists)

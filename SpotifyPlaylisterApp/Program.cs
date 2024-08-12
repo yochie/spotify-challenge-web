@@ -10,6 +10,7 @@ using SpotifyPlaylisterApp.Pages.MyPlaylists;
 using System.Net;
 using Microsoft.AspNetCore.Authorization;
 using SpotifyPlaylisterApp.Authorization;
+using SpotifyPlaylisterApp.Models;
 var builder = WebApplication.CreateBuilder(args);
 
 IConfigurationRoot config = new ConfigurationBuilder()
@@ -151,7 +152,9 @@ builder.Services.AddScoped<ILoggedSpotifyClient>(provider =>
         settings.DataAPIAddress,
         settings.Scopes,
         provider.GetRequiredService<IHttpClientFactory>(),
-        provider.GetRequiredService<UserManager<SpotifyPlaylisterUser>>()
+        provider.GetRequiredService<UserManager<SpotifyPlaylisterUser>>(),
+        provider.GetRequiredService<IJsonParser<PlaylistIdList>>(),
+        provider.GetRequiredService<IJsonParser<PlaylistData>>()
     )
 );
 

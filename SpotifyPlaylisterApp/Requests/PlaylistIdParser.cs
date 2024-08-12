@@ -12,10 +12,9 @@ namespace SpotifyPlaylisterApp.Requests {
             if (playlistQuery == null || playlistQuery.Items == null)
                 throw new Exception("couldnt parse json");
 
-            return new PlaylistIdList(playlistQuery.Items.Select(i => i.PlaylistId).ToList());
+            return new PlaylistIdList(playlistQuery.Items.Select(i => i.PlaylistId).ToList(), playlistQuery.NextPage ?? "");
         }
-
     }
 
-    public record PlaylistIdList(List<string> List);
+    public record PlaylistIdList(List<string> List, string NextPage);
 }

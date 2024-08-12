@@ -18,7 +18,7 @@ namespace SpotifyPlaylisterApp.Requests
 {
 
     //Handles requests for playlists
-    //Returns raw Json
+    //Returns parsed results
     internal class LoggedSpotifyClient : ISpotifyClient, ILoggedSpotifyClient
     {
         //for use by http client factory
@@ -29,6 +29,8 @@ namespace SpotifyPlaylisterApp.Requests
         private readonly string[] scopes;
         private readonly Uri _endpoint;
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly IJsonParser<PlaylistIdList> playlistIdParser;
+        private readonly IJsonParser<PlaylistData> playlistContentParser;
         private readonly string _userId;
 
         public LoggedSpotifyClient(IHttpContextAccessor http,
@@ -37,7 +39,9 @@ namespace SpotifyPlaylisterApp.Requests
                                    string endpointUri,
                                    string[] scopes,
                                    IHttpClientFactory httpClient,
-                                   UserManager<SpotifyPlaylisterUser> userManager)
+                                   UserManager<SpotifyPlaylisterUser> userManager,
+                                   IJsonParser<PlaylistIdList> playlistIdParser,
+                                   IJsonParser<PlaylistData> playlistContentParser)
         {
             _http = http;
             _context = context;
@@ -45,7 +49,9 @@ namespace SpotifyPlaylisterApp.Requests
             this.scopes = scopes;
             _endpoint = new Uri(endpointUri);
             _httpClientFactory = httpClient;
-            _userId = _http.HttpContext!.User.GetClaims(ClaimTypes.NameIdentifier).FirstOrDefault() ?? throw new UnauthorizedAccessException();
+            this.playlistIdParser = playlistIdParser;
+            this.playlistContentParser = playlistContentParser;
+            _userId = userManager.GetUserId(_http.HttpContext!.User) ?? throw new UnauthorizedAccessException();
         }
 
         public async Task<bool> IsAuthorized()
@@ -76,12 +82,13 @@ namespace SpotifyPlaylisterApp.Requests
             return await apiResponse.Content.ReadAsStringAsync();
         }
 
-        public async Task<string> GetUserPlaylistIdsAsync()
+        public async Task<List<string>> GetUserPlaylistIdsAsync()
         {
+            
             string accessToken;
             accessToken = await _authentifier.GetAccessToken();
             using HttpClient httpClient = _httpClientFactory.CreateClient(httpClientName);
-            string fieldQuery = "";
+            string fieldQuery = "limit=50";
             var msg = new HttpRequestMessage();
             msg.Headers.Add("Authorization", "Bearer " + accessToken);
             msg.Method = HttpMethod.Get;
@@ -90,13 +97,24 @@ namespace SpotifyPlaylisterApp.Requests
             uriBuilder.Query = fieldQuery;
             msg.RequestUri = uriBuilder.Uri;
             msg.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
-            var apiResponse = await httpClient.SendAsync(msg);
 
-            if (apiResponse.StatusCode != HttpStatusCode.OK)
-            {
-                throw new Exception($"Couldn't request playlist data. Q: {msg.RequestUri}\n status : {apiResponse.StatusCode}");
-            }
-            return await apiResponse.Content.ReadAsStringAsync();
+            List<string> playlistIdList = new();
+            PlaylistIdList queryResult;
+            do {
+                var apiResponse = await httpClient.SendAsync(msg);
+
+                if (apiResponse.StatusCode != HttpStatusCode.OK)
+                {
+                    throw new Exception($"Couldn't request playlist data. Error Code : {apiResponse.StatusCode}");
+                }
+                var json = await apiResponse.Content.ReadAsStringAsync();
+                queryResult = playlistIdParser.Parse(json);
+                playlistIdList.AddRange(queryResult.List);
+                if(queryResult.NextPage != ""){
+                    msg.RequestUri = new Uri(queryResult.NextPage);
+                }
+            } while(queryResult.NextPage != "");
+            return playlistIdList;
         }
 
         public async Task Challenge(HttpContext httpContext)

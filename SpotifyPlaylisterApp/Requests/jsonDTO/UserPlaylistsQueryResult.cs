@@ -6,4 +6,7 @@ public class UserPlaylistsQueryResult
 {
     [JsonProperty("items")]
     required public List<UserPlaylistsItemsQueryResult> Items { get; set; }
+
+    [JsonProperty("next")]
+    public string? NextPage {get; set; }
 }
