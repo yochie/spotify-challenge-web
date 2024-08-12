@@ -11,6 +11,8 @@ using System.Net;
 using Microsoft.AspNetCore.Authorization;
 using SpotifyPlaylisterApp.Authorization;
 using SpotifyPlaylisterApp.Models;
+using System.Configuration;
+using static OpenIddict.Client.WebIntegration.OpenIddictClientWebIntegrationConstants;
 var builder = WebApplication.CreateBuilder(args);
 
 IConfigurationRoot config = new ConfigurationBuilder()
@@ -62,14 +64,16 @@ builder.Services.AddOpenIddict()
         options.AddDevelopmentEncryptionCertificate().AddDevelopmentSigningCertificate();
         options.UseAspNetCore()
             .EnableRedirectionEndpointPassthrough()
-            .EnableStatusCodePagesIntegration()
-            .DisableAutomaticAuthenticationSchemeForwarding();
+            .EnableStatusCodePagesIntegration();
+            //this causes breakes challenge, but is required for properly deactivating spotify as external auth
+            //todo : change challenge to allow this
+            //.DisableAutomaticAuthenticationSchemeForwarding();
             
         options.UseSystemNetHttp();
         options.UseWebProviders().AddSpotify(spotifyOptions => {
             spotifyOptions.SetClientId(settings.ClientID)
                 .SetClientSecret(settings.Secret)
-                .SetRedirectUri(settings.RedirectUri);
+                .SetRedirectUri(settings.RedirectUri).SetProviderName(Providers.Spotify);
         });
     });
 
