@@ -9,6 +9,7 @@ using SpotifyPlaylisterApp.Data;
 using SpotifyPlaylisterApp.Pages.MyPlaylists;
 using System.Net;
 using Microsoft.AspNetCore.Authorization;
+using SpotifyPlaylisterApp.Authorization;
 var builder = WebApplication.CreateBuilder(args);
 
 IConfigurationRoot config = new ConfigurationBuilder()
@@ -48,6 +49,7 @@ builder.Services.AddAuthorization(options => {
         .RequireAuthenticatedUser()
         .Build();
 });
+builder.Services.AddScoped<IAuthorizationHandler, PlaylistDetailsAuthorizationHandler>();
 
 builder.Services.AddOpenIddict()
     .AddCore(options => {
