@@ -77,8 +77,15 @@ namespace SpotifyPlaylisterApp.Pages.MyPlaylists
                 .Include(u => u.Playlists)
                 .FirstOrDefaultAsync(u => u.Id == _userManager.GetUserId(User)) ?? throw new UnauthorizedAccessException();
             List<string> dbPlaylistIds = user.Playlists.Select(p => p.SpotifyId).ToList();
+
+            //Todo : progress bar
             //foreach followed playlist, update tracks
-            await UpdateUserPlaylists(freshPlaylistIds, dbPlaylistIds);
+            try {
+                await UpdateUserPlaylists(freshPlaylistIds, dbPlaylistIds);
+            } catch (Exception e){
+                Error = e.Message;
+                return;
+            }
 
             Response.Redirect(Request.GetEncodedUrl());
         }
