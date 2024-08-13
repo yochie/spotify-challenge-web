@@ -44,18 +44,12 @@ public class IndexModel : PageModel
         if(PlaylistId is null){
             return Page();
         }
+
         try {
-            RawJsonResponse = await spotify.GetPlaylist(PlaylistId);
+            this.Playlist = await spotify.GetPlaylist(PlaylistId);
         } catch(Exception e){
-            RawJsonResponse = $"Error : couldn't find playlist";
-            Error = "Couldn't find requested playlist.";
-            _logger.LogError(e.ToString());
+            Error = e.Message;
             return Page();
-        }
-        try {
-            this.Playlist = parser.Parse(RawJsonResponse);
-        } catch {
-            Error = "Problem parsing results.";
         }
         return Page();
     }

@@ -143,7 +143,8 @@ builder.Services.AddScoped<IAnonymousSpotifyClient>(provider =>
     new AnonymousSpotifyClient(
         provider.GetRequiredService<AuthenticatorResolver>()(true),
         settings.DataAPIAddress,
-        provider.GetRequiredService<IHttpClientFactory>()
+        provider.GetRequiredService<IHttpClientFactory>(),
+        provider.GetRequiredService<IJsonParser<PlaylistData>>()
     )
 );
 
