@@ -95,17 +95,15 @@ namespace SpotifyPlaylisterApp.Pages.MyPlaylists
             //create missing playlists and update existing ones
             foreach(string playlistId in freshPlaylistIds){
 
-                string RawJsonResponse = "";      
-                RawJsonResponse = await _spotify.GetPlaylist(playlistId, Response);
-                var PlaylistData = _parser.Parse(RawJsonResponse);
+                var playlistData =  await _spotify.GetPlaylist(playlistId, Response);
 
                 //find corresponding playlist in db
                 var dbPlaylist = await _context.Playlist.Include(p => p.Tracks).FirstOrDefaultAsync(p => p.SpotifyId == playlistId);
 
                 if (dbPlaylist is not null){
-                    UpdatePlaylist(dbPlaylist, PlaylistData);
+                    UpdatePlaylist(dbPlaylist, playlistData);
                 } else {
-                    CreatePlaylist(PlaylistData);
+                    CreatePlaylist(playlistData);
                 }
             }
             //delete removed playlists

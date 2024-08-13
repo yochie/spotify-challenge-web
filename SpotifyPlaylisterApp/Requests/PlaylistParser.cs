@@ -24,12 +24,14 @@ namespace SpotifyPlaylisterApp.Requests {
             PlaylistData playlistData = new(playlist.Id,
                                             playlist.Name,
                                             playlist.Owner.Name ?? playlist.Owner.Id,
-                                            trackData);
+                                            trackData,
+                                            playlist.NextPage ?? "");
             return playlistData;
         }
     }
 
     public record TrackData(string Name, string Album, string Artists, string SpotifyId);
 
-    public record PlaylistData(string Id, string Name, string OwnerName, IEnumerable<TrackData> Tracks);
+    public record PlaylistData(string Id, string Name, string OwnerName, IEnumerable<TrackData> Tracks, string NextPage);
+
 }

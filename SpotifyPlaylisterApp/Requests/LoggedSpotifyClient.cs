@@ -10,6 +10,7 @@ using OpenIddict.Client.AspNetCore;
 using SpotifyPlaylisterApp;
 using SpotifyPlaylisterApp.Areas.Identity.Data;
 using SpotifyPlaylisterApp.Data;
+using SpotifyPlaylisterApp.Models;
 using SpotifyPlaylisterApp.Pages;
 using SpotifyPlaylisterApp.Requests.Auth;
 using static OpenIddict.Client.WebIntegration.OpenIddictClientWebIntegrationConstants;
@@ -29,8 +30,8 @@ namespace SpotifyPlaylisterApp.Requests
         private readonly string[] scopes;
         private readonly Uri _endpoint;
         private readonly IHttpClientFactory _httpClientFactory;
-        private readonly IJsonParser<PlaylistIdList> playlistIdParser;
-        private readonly IJsonParser<PlaylistData> playlistContentParser;
+        private readonly IJsonParser<PlaylistIdList> _playlistIdParser;
+        private readonly IJsonParser<PlaylistData> _playlistContentParser;
         private readonly string _userId;
 
         public LoggedSpotifyClient(IHttpContextAccessor http,
@@ -49,8 +50,8 @@ namespace SpotifyPlaylisterApp.Requests
             this.scopes = scopes;
             _endpoint = new Uri(endpointUri);
             _httpClientFactory = httpClient;
-            this.playlistIdParser = playlistIdParser;
-            this.playlistContentParser = playlistContentParser;
+            this._playlistIdParser = playlistIdParser;
+            this._playlistContentParser = playlistContentParser;
             _userId = userManager.GetUserId(_http.HttpContext!.User) ?? throw new UnauthorizedAccessException();
         }
 
@@ -60,26 +61,36 @@ namespace SpotifyPlaylisterApp.Requests
             return user.SpotifyAccessToken is not null;
         }
 
-        public async Task<string> GetPlaylist(string id, HttpResponse? response)
+        public async Task<PlaylistData> GetPlaylist(string id, HttpResponse? response)
         {
-            string accessToken = await _authentifier.GetAccessToken();
-            using HttpClient httpClient = _httpClientFactory.CreateClient(httpClientName);
+            using HttpClient httpClient = _httpClientFactory.CreateClient(LoggedSpotifyClient.httpClientName);
             string fieldQuery = "fields=id,name,owner.id,owner.display_name,tracks.items(track(id,name,artists(name),album(name)))";
-            var msg = new HttpRequestMessage();
-            msg.Headers.Add("Authorization", "Bearer " + accessToken);
-            msg.Method = HttpMethod.Get;
             UriBuilder uriBuilder = new(_endpoint);
             uriBuilder.Path += $"playlists/{id}";
             uriBuilder.Query = fieldQuery;
-            msg.RequestUri = uriBuilder.Uri;
-            msg.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
-            var apiResponse = await httpClient.SendAsync(msg);
+            string accessToken = await _authentifier.GetAccessToken();
+            var msg = BuildMessage(uriBuilder.Uri, accessToken);
+            PlaylistData playlistDataPage;
+            PlaylistData? fullPlaylistData = null;
+            do{
+                var apiResponse = await httpClient.SendAsync(msg);
 
-            if (apiResponse.StatusCode != HttpStatusCode.OK)
-            {
-                throw new Exception($"Couldn't request playlist data. Q: {msg.RequestUri}\n status : {apiResponse.StatusCode}");
-            }
-            return await apiResponse.Content.ReadAsStringAsync();
+                if (apiResponse.StatusCode != HttpStatusCode.OK)
+                {
+                    throw new Exception($"Couldn't request playlist data. Q: {msg.RequestUri}\n status : {apiResponse.StatusCode}");
+                }
+                var json = await apiResponse.Content.ReadAsStringAsync();
+                playlistDataPage = _playlistContentParser.Parse(json);
+                if(fullPlaylistData == null){
+                    fullPlaylistData = playlistDataPage;
+                } else {
+                    fullPlaylistData = fullPlaylistData with {Tracks = fullPlaylistData.Tracks.Concat(playlistDataPage.Tracks)};
+                }
+                if(playlistDataPage.NextPage != ""){
+                    msg = BuildMessage(new Uri(playlistDataPage.NextPage), accessToken);
+                }
+            } while(playlistDataPage.NextPage != "");
+            return fullPlaylistData;
         }
 
         public async Task<List<string>> GetUserPlaylistIdsAsync()
@@ -103,7 +114,7 @@ namespace SpotifyPlaylisterApp.Requests
                     throw new Exception($"Couldn't request playlist data. Error Code : {apiResponse.StatusCode}");
                 }
                 var json = await apiResponse.Content.ReadAsStringAsync();
-                queryResult = playlistIdParser.Parse(json);
+                queryResult = _playlistIdParser.Parse(json);
                 playlistIdList.AddRange(queryResult.List);
                 if(queryResult.NextPage != ""){
                     msg = BuildMessage(new Uri(queryResult.NextPage), accessToken);
@@ -112,7 +123,7 @@ namespace SpotifyPlaylisterApp.Requests
             return playlistIdList;
         }
         
-        private HttpRequestMessage BuildMessage(Uri uri, string accessToken){
+        private static HttpRequestMessage BuildMessage(Uri uri, string accessToken){
             var msg = new HttpRequestMessage();
             msg.Headers.Add("Authorization", "Bearer " + accessToken);
             msg.Method = HttpMethod.Get;

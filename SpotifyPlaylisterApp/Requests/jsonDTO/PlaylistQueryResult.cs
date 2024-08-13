@@ -15,4 +15,7 @@ internal class PlaylistQueryResult
 
     [JsonProperty("owner")]
     required internal OwnerQueryResult Owner {get; set;}
+
+    [JsonProperty("next")]
+    required internal string? NextPage {get; set;}
 }

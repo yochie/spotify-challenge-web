@@ -4,6 +4,6 @@ namespace SpotifyPlaylisterApp.Requests
 {
     public interface ISpotifyClient
     {
-        public Task<string> GetPlaylist(string playlistID, HttpResponse? response = null);
+        public Task<PlaylistData> GetPlaylist(string playlistID, HttpResponse? response = null);
     }
 }
