@@ -144,7 +144,8 @@ builder.Services.AddScoped<IAnonymousSpotifyClient>(provider =>
         provider.GetRequiredService<AuthenticatorResolver>()(true),
         settings.DataAPIAddress,
         provider.GetRequiredService<IHttpClientFactory>(),
-        provider.GetRequiredService<IJsonParser<PlaylistData>>()
+        provider.GetRequiredService<IJsonParser<PlaylistData>>(),
+        provider.GetRequiredService<IJsonParser<PlaylistTracksData>>()
     )
 );
 
@@ -159,13 +160,15 @@ builder.Services.AddScoped<ILoggedSpotifyClient>(provider =>
         provider.GetRequiredService<IHttpClientFactory>(),
         provider.GetRequiredService<UserManager<SpotifyPlaylisterUser>>(),
         provider.GetRequiredService<IJsonParser<PlaylistIdList>>(),
-        provider.GetRequiredService<IJsonParser<PlaylistData>>()
+        provider.GetRequiredService<IJsonParser<PlaylistData>>(),
+        provider.GetRequiredService<IJsonParser<PlaylistTracksData>>()
     )
 );
 
+//for parsing spotify api json
 builder.Services.AddSingleton<IJsonParser<PlaylistData>, PlaylistParser>();
-
 builder.Services.AddSingleton<IJsonParser<PlaylistIdList>, PlaylistIdParser>();
+builder.Services.AddSingleton<IJsonParser<PlaylistTracksData>, PlaylistTracksParser>();
 
 var app = builder.Build();
 

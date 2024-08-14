@@ -2,7 +2,8 @@ using System.Linq;
 using Newtonsoft.Json;
 using SpotifyPlaylisterApp;
 using SpotifyPlaylisterApp.Pages.MyPlaylists;
-namespace SpotifyPlaylisterApp.Requests {
+namespace SpotifyPlaylisterApp.Requests
+{
     internal class PlaylistIdParser : IJsonParser<PlaylistIdList>
     {
         public PlaylistIdList Parse(string json)

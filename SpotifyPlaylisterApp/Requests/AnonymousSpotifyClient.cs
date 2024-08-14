@@ -16,45 +16,72 @@ namespace SpotifyPlaylisterApp.Requests
         private readonly Uri _endpoint;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IJsonParser<PlaylistData> _playlistParser;
+        private readonly IJsonParser<PlaylistTracksData> _playlistTracksParser;
 
         public AnonymousSpotifyClient(IAuthenticationProvider authentifier,
                                       string endpointUri,
                                       IHttpClientFactory httpClient,
-                                      IJsonParser<PlaylistData> playlistParser)
+                                      IJsonParser<PlaylistData> playlistParser,
+                                      IJsonParser<PlaylistTracksData> playlistTracksParser)
         {
             this._authentifier = authentifier;
             this._endpoint = new Uri(endpointUri);
             this._httpClientFactory = httpClient;
             this._playlistParser = playlistParser;
+            _playlistTracksParser = playlistTracksParser;
         }
 
         public async Task<PlaylistData> GetPlaylist(string id, HttpResponse? response = null)
         {
             using HttpClient httpClient = _httpClientFactory.CreateClient(LoggedSpotifyClient.httpClientName);
-            string fieldQuery = "fields=name,owner.id,tracks.items(track(name,artists(name),album(name)))";
+            string fieldQuery = "fields=name,owner.id";
             UriBuilder uriBuilder = new(_endpoint);
             uriBuilder.Path += $"playlists/{id}";
             uriBuilder.Query = fieldQuery;
             string accessToken = await _authentifier.GetAccessToken();
             var msg = BuildMessage(uriBuilder.Uri, accessToken);
-            PlaylistData playlistDataPage;
-            PlaylistData? fullPlaylistData = null;
+            var apiResponse = await httpClient.SendAsync(msg);
+
+            if (apiResponse.StatusCode != HttpStatusCode.OK)
+            {
+                throw new Exception($"Couldn't request playlist tracks data. Error code : {apiResponse.StatusCode}");
+            }
+            var json = await apiResponse.Content.ReadAsStringAsync();
+            var playlistData = _playlistParser.Parse(json);
+            playlistData.Tracks = await GetPlaylistTracks(id);
+            return playlistData;
+        }
+
+        //iterats on pages to return full list of tracks 
+        private async Task<List<TrackData>> GetPlaylistTracks(string playlistId){
+            using HttpClient httpClient = _httpClientFactory.CreateClient(LoggedSpotifyClient.httpClientName);
+            string fieldQuery = "fields=items(track(id,name,artists(name),album(name))),next";
+            UriBuilder uriBuilder = new(_endpoint);
+            uriBuilder.Path += $"playlists/{playlistId}/tracks";
+            uriBuilder.Query = fieldQuery;
+            string accessToken = await _authentifier.GetAccessToken();
+            var msg = BuildMessage(uriBuilder.Uri, accessToken);
+            PlaylistTracksData tracksPage;
+            List<TrackData>? fullTracks = null;
             do{
                 var apiResponse = await httpClient.SendAsync(msg);
 
                 if (apiResponse.StatusCode != HttpStatusCode.OK)
                 {
-                    throw new Exception($"Couldn't request playlist data. Q: {msg.RequestUri}\n status : {apiResponse.StatusCode}");
+                    throw new Exception($"Couldn't request playlist tracks data. Error code : {apiResponse.StatusCode}");
                 }
                 var json = await apiResponse.Content.ReadAsStringAsync();
-                playlistDataPage = _playlistParser.Parse(json);
-                if(fullPlaylistData == null){
-                    fullPlaylistData = playlistDataPage;
+                tracksPage = _playlistTracksParser.Parse(json);
+                if(fullTracks == null){
+                    fullTracks = tracksPage.Tracks;
                 } else {
-                    fullPlaylistData = fullPlaylistData with {Tracks = fullPlaylistData.Tracks.Concat(playlistDataPage.Tracks)};
+                    fullTracks.AddRange(tracksPage.Tracks);
                 }
-            } while(playlistDataPage.NextPage != "");
-            return fullPlaylistData;
+                if(tracksPage.NextPage != ""){
+                    msg = BuildMessage(new Uri(tracksPage.NextPage), accessToken);
+                }
+            } while(tracksPage.NextPage != "");
+            return fullTracks;
         }
 
         private HttpRequestMessage BuildMessage(Uri uri, string accessToken){

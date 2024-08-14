@@ -4,9 +4,6 @@ namespace SpotifyPlaylisterApp;
 
 internal class PlaylistQueryResult
 {
-    [JsonProperty("tracks")]
-    required internal TracksQueryResult Tracks { get; set; }
-
     [JsonProperty("id")]
     required internal string Id {get; set;}
     
@@ -15,7 +12,4 @@ internal class PlaylistQueryResult
 
     [JsonProperty("owner")]
     required internal OwnerQueryResult Owner {get; set;}
-
-    [JsonProperty("next")]
-    required internal string? NextPage {get; set;}
 }

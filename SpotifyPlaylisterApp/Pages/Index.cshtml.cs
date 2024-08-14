@@ -14,23 +14,12 @@ namespace SpotifyPlaylisterApp.Pages;
 public class IndexModel : PageModel
 {
     private readonly ILogger<IndexModel> _logger;
-    private readonly SpotifyPlaylisterAppContext _context;
     private readonly IAnonymousSpotifyClient spotify;
-    private readonly IJsonParser<PlaylistData> parser;
 
-    public IndexModel(ILogger<IndexModel> logger,
-                      SpotifyPlaylisterAppContext context,
-                      IAnonymousSpotifyClient spotify,
-                      IJsonParser<PlaylistData> parser)
+    public IndexModel(ILogger<IndexModel> logger, IAnonymousSpotifyClient spotify)
     {
         _logger = logger;
-        _context = context;
         this.spotify = spotify;
-        this.parser = parser;
-    }
-
-    public void OnGet()
-    {
     }
 
     public PlaylistData? Playlist {get; set;}
@@ -49,7 +38,6 @@ public class IndexModel : PageModel
             this.Playlist = await spotify.GetPlaylist(PlaylistId);
         } catch(Exception e){
             Error = e.Message;
-            return Page();
         }
         return Page();
     }

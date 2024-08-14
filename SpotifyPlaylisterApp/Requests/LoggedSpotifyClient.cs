@@ -27,11 +27,12 @@ namespace SpotifyPlaylisterApp.Requests
         private readonly IHttpContextAccessor _http;
         private readonly SpotifyPlaylisterAppContext _context;
         private readonly IAuthenticationProvider _authentifier;
-        private readonly string[] scopes;
+        private readonly string[] _scopes;
         private readonly Uri _endpoint;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IJsonParser<PlaylistIdList> _playlistIdParser;
-        private readonly IJsonParser<PlaylistData> _playlistContentParser;
+        private readonly IJsonParser<PlaylistData> _playlistParser;
+        private readonly IJsonParser<PlaylistTracksData> _playlistTracksParser;
         private readonly string _userId;
 
         public LoggedSpotifyClient(IHttpContextAccessor http,
@@ -42,16 +43,18 @@ namespace SpotifyPlaylisterApp.Requests
                                    IHttpClientFactory httpClient,
                                    UserManager<SpotifyPlaylisterUser> userManager,
                                    IJsonParser<PlaylistIdList> playlistIdParser,
-                                   IJsonParser<PlaylistData> playlistContentParser)
+                                   IJsonParser<PlaylistData> playlistContentParser,
+                                   IJsonParser<PlaylistTracksData> playlistTracksParser)
         {
             _http = http;
             _context = context;
             _authentifier = authenticationProvider;
-            this.scopes = scopes;
+            _scopes = scopes;
             _endpoint = new Uri(endpointUri);
             _httpClientFactory = httpClient;
-            this._playlistIdParser = playlistIdParser;
-            this._playlistContentParser = playlistContentParser;
+            _playlistIdParser = playlistIdParser;
+            _playlistParser = playlistContentParser;
+            _playlistTracksParser = playlistTracksParser;
             _userId = userManager.GetUserId(_http.HttpContext!.User) ?? throw new UnauthorizedAccessException();
         }
 
@@ -64,38 +67,58 @@ namespace SpotifyPlaylisterApp.Requests
         public async Task<PlaylistData> GetPlaylist(string id, HttpResponse? response)
         {
             using HttpClient httpClient = _httpClientFactory.CreateClient(LoggedSpotifyClient.httpClientName);
-            string fieldQuery = "fields=id,name,owner.id,owner.display_name,tracks.items(track(id,name,artists(name),album(name)))";
+            string fieldQuery = "fields=id,name,owner.id,owner.display_name";
             UriBuilder uriBuilder = new(_endpoint);
             uriBuilder.Path += $"playlists/{id}";
             uriBuilder.Query = fieldQuery;
             string accessToken = await _authentifier.GetAccessToken();
             var msg = BuildMessage(uriBuilder.Uri, accessToken);
-            PlaylistData playlistDataPage;
-            PlaylistData? fullPlaylistData = null;
+            var apiResponse = await httpClient.SendAsync(msg);
+
+            if (apiResponse.StatusCode != HttpStatusCode.OK)
+            {
+                throw new Exception($"Couldn't request playlist tracks data. Error code : {apiResponse.StatusCode}");
+            }
+            var json = await apiResponse.Content.ReadAsStringAsync();
+            var playlistData = _playlistParser.Parse(json);
+            playlistData.Tracks = await GetPlaylistTracks(id);
+            return playlistData;
+        }
+
+        //iterats on pages to return full list of tracks 
+        private async Task<List<TrackData>> GetPlaylistTracks(string playlistId){
+            using HttpClient httpClient = _httpClientFactory.CreateClient(LoggedSpotifyClient.httpClientName);
+            string fieldQuery = "fields=items(track(id,name,artists(name),album(name))),next";
+            UriBuilder uriBuilder = new(_endpoint);
+            uriBuilder.Path += $"playlists/{playlistId}/tracks";
+            uriBuilder.Query = fieldQuery;
+            string accessToken = await _authentifier.GetAccessToken();
+            var msg = BuildMessage(uriBuilder.Uri, accessToken);
+            PlaylistTracksData tracksPage;
+            List<TrackData>? fullTracks = null;
             do{
                 var apiResponse = await httpClient.SendAsync(msg);
 
                 if (apiResponse.StatusCode != HttpStatusCode.OK)
                 {
-                    throw new Exception($"Couldn't request playlist data. Q: {msg.RequestUri}\n status : {apiResponse.StatusCode}");
+                    throw new Exception($"Couldn't request playlist tracks data. Error code : {apiResponse.StatusCode}");
                 }
                 var json = await apiResponse.Content.ReadAsStringAsync();
-                playlistDataPage = _playlistContentParser.Parse(json);
-                if(fullPlaylistData == null){
-                    fullPlaylistData = playlistDataPage;
+                tracksPage = _playlistTracksParser.Parse(json);
+                if(fullTracks == null){
+                    fullTracks = tracksPage.Tracks;
                 } else {
-                    fullPlaylistData = fullPlaylistData with {Tracks = fullPlaylistData.Tracks.Concat(playlistDataPage.Tracks)};
+                    fullTracks.AddRange(tracksPage.Tracks);
                 }
-                if(playlistDataPage.NextPage != ""){
-                    msg = BuildMessage(new Uri(playlistDataPage.NextPage), accessToken);
+                if(tracksPage.NextPage != ""){
+                    msg = BuildMessage(new Uri(tracksPage.NextPage), accessToken);
                 }
-            } while(playlistDataPage.NextPage != "");
-            return fullPlaylistData;
+            } while(tracksPage.NextPage != "");
+            return fullTracks;
         }
 
         public async Task<List<string>> GetUserPlaylistIdsAsync()
         {
-            
             string accessToken;
             accessToken = await _authentifier.GetAccessToken();
             using HttpClient httpClient = _httpClientFactory.CreateClient(httpClientName);
@@ -135,7 +158,7 @@ namespace SpotifyPlaylisterApp.Requests
         public async Task Challenge(HttpContext httpContext)
         {
             var props = new AuthenticationProperties();
-            props.SetParameter<string>("scope", scopes.Aggregate("", (str, next) => str + " " + next));
+            props.SetParameter<string>("scope", _scopes.Aggregate("", (str, next) => str + " " + next));
             await Results.Challenge(props, authenticationSchemes: [Providers.Spotify]).ExecuteAsync(httpContext);
         }
 

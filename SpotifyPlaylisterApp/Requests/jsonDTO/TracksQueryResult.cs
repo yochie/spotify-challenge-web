@@ -6,4 +6,7 @@ internal class TracksQueryResult
 {
     [JsonProperty("items")]
     required internal List<PlaylistTrackQueryResult> Items { get; set;}
+
+    [JsonProperty("next")]
+    required internal string? NextPage {get; set;}
 }
