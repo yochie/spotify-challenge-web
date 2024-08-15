@@ -18,5 +18,6 @@ namespace SpotifyPlaylisterApp.Data
 
         public DbSet<Playlist> Playlist { get; set; } = default!;
         public DbSet<PlaylistTrack> PlaylistTrack { get; set; } = default!;
+        public DbSet<UpdateProgress> UpdateProgress {get; set; } = default!;
     }
 }
