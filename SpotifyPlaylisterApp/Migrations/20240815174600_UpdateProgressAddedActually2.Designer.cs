@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SpotifyPlaylisterApp.Data;
 
@@ -10,9 +11,11 @@ using SpotifyPlaylisterApp.Data;
 namespace SpotifyPlaylisterApp.Migrations
 {
     [DbContext(typeof(SpotifyPlaylisterAppContext))]
-    partial class SpotifyPlaylisterAppContextModelSnapshot : ModelSnapshot
+    [Migration("20240815174600_UpdateProgressAddedActually2")]
+    partial class UpdateProgressAddedActually2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.7");

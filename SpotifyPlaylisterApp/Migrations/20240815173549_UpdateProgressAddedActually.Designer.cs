@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SpotifyPlaylisterApp.Data;
 
@@ -10,9 +11,11 @@ using SpotifyPlaylisterApp.Data;
 namespace SpotifyPlaylisterApp.Migrations
 {
     [DbContext(typeof(SpotifyPlaylisterAppContext))]
-    partial class SpotifyPlaylisterAppContextModelSnapshot : ModelSnapshot
+    [Migration("20240815173549_UpdateProgressAddedActually")]
+    partial class UpdateProgressAddedActually
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.7");
@@ -503,28 +506,6 @@ namespace SpotifyPlaylisterApp.Migrations
                     b.ToTable("PlaylistTrack");
                 });
 
-            modelBuilder.Entity("SpotifyPlaylisterApp.Models.UpdateProgress", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("Done")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<float>("Progress")
-                        .HasColumnType("REAL");
-
-                    b.Property<string>("SpotifyPlaylisterUserId")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("SpotifyPlaylisterUserId");
-
-                    b.ToTable("UpdateProgress");
-                });
-
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -624,15 +605,6 @@ namespace SpotifyPlaylisterApp.Migrations
                         .IsRequired();
 
                     b.Navigation("Playlist");
-                });
-
-            modelBuilder.Entity("SpotifyPlaylisterApp.Models.UpdateProgress", b =>
-                {
-                    b.HasOne("SpotifyPlaylisterApp.Areas.Identity.Data.SpotifyPlaylisterUser", "SpotifyPlaylisterUser")
-                        .WithMany()
-                        .HasForeignKey("SpotifyPlaylisterUserId");
-
-                    b.Navigation("SpotifyPlaylisterUser");
                 });
 
             modelBuilder.Entity("OpenIddict.EntityFrameworkCore.Models.OpenIddictEntityFrameworkCoreApplication", b =>
