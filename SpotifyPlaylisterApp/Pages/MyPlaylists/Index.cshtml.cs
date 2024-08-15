@@ -11,7 +11,9 @@ using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Update.Internal;
 using Microsoft.IdentityModel.Tokens;
 using Polly;
 using SpotifyPlaylisterApp.Areas.Identity.Data;
@@ -63,36 +65,85 @@ namespace SpotifyPlaylisterApp.Pages.MyPlaylists
             return Page();
         }
 
-        public async Task OnPostUpdate(){
+        public async Task<ActionResult> OnGetProgressAsync(){
+            //todo : get progress from appropriate db entry, 
+            //local progress isn't available since this is different request
+            var userId = _userManager.GetUserId(User);
+            var progressEntry = await _context.UpdateProgress
+                .Include(up => up.SpotifyPlaylisterUser)
+                .FirstOrDefaultAsync(up => up.SpotifyPlaylisterUser.Id == userId && !up.Done);
+            float progress;
+            if (progressEntry == null)
+                progress = 0f;
+            else 
+                progress = progressEntry.Progress;
+
+            return this.Content((progress * 100f).ToString() + "%");
+        }
+
+        //called via xhr
+        //returns 0 (string) when successful
+        //returns 1 (string) on error
+        public async Task<ActionResult> OnPostUpdateAsync(){
+            //check if update is already running, abort if so
+            string currentUserId = _userManager.GetUserId(User) ?? "";
+
+            bool alreadyInProgress = await _context.UpdateProgress
+                .Include(up => up.SpotifyPlaylisterUser)
+                .AnyAsync(up => up.SpotifyPlaylisterUser.Id == currentUserId && !up.Done);
+
+            if(alreadyInProgress)
+                return this.Content("1");
+
+            //create entry in db to track update progress
+            var updateProgress = new UpdateProgress();
+            updateProgress.Progress = 0f;
+            updateProgress.Done = false;
+            var user = await _context.Users
+                .Include(u => u.Playlists)
+                .FirstOrDefaultAsync(u => u.Id == _userManager.GetUserId(User));
+            if (user == null){
+                return this.Content("1");
+            }
+            updateProgress.SpotifyPlaylisterUser = user;
+            _context.UpdateProgress.Add(updateProgress);
+            await _context.SaveChangesAsync();
+
             //Get list of playlists that user follows
             List<string> freshPlaylistIds;
             try {
                 freshPlaylistIds = await _spotify.GetUserPlaylistIdsAsync();
             } catch (Exception e){
                 Error = e.Message;
-                return;
+                return this.Content("1");
             }
 
-            var user = await _context.Users
-                .Include(u => u.Playlists)
-                .FirstOrDefaultAsync(u => u.Id == _userManager.GetUserId(User)) ?? throw new UnauthorizedAccessException();
+            updateProgress.Progress = 0.1f;
+            await _context.SaveChangesAsync();
+
             List<string> dbPlaylistIds = user.Playlists.Select(p => p.SpotifyId).ToList();
 
-            //Todo : progress bar
             //foreach followed playlist, update tracks
             try {
-                await UpdateUserPlaylists(freshPlaylistIds, dbPlaylistIds);
+                await UpdateUserPlaylists(freshPlaylistIds, dbPlaylistIds, updateProgress);
             } catch (Exception e){
                 Error = e.Message;
-                return;
+                return this.Content("1");
             }
 
-            Response.Redirect(Request.GetEncodedUrl());
+            updateProgress.Progress = 1f;
+            updateProgress.Done = true;
+            await _context.SaveChangesAsync();
+            return this.Content("0");
+            //Response.Redirect(Request.GetEncodedUrl());
         }
 
-        private async Task UpdateUserPlaylists(List<string> freshPlaylistIds, List<string> dbPlaylistIds)
+        private async Task UpdateUserPlaylists(List<string> freshPlaylistIds, List<string> dbPlaylistIds, UpdateProgress updateProgress)
         {
             //create missing playlists and update existing ones
+            //will account for 80% of progress (abritrary...)
+            int numPlaylists = freshPlaylistIds.Count;
+            float portionOfProgress = 0.8f;
             foreach(string playlistId in freshPlaylistIds){
 
                 var playlistData =  await _spotify.GetPlaylist(playlistId, Response);
@@ -105,8 +156,12 @@ namespace SpotifyPlaylisterApp.Pages.MyPlaylists
                 } else {
                     CreatePlaylist(playlistData);
                 }
+                updateProgress.Progress += (1f / numPlaylists) * portionOfProgress;
+                await _context.SaveChangesAsync();
             }
+
             //delete removed playlists
+            //will account for remaining 10% of progress (abritrary...)
             foreach(string dbPlaylistId in dbPlaylistIds){
                 if(!freshPlaylistIds.Contains(dbPlaylistId)){
                     var toRemove = await _context.Playlist.FirstAsync(p => p.SpotifyId == dbPlaylistId);

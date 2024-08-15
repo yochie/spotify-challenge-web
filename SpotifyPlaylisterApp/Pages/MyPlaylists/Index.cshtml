@@ -7,18 +7,27 @@
 <h1>Index</h1>
 
 <p>
-   <form asp-page-handler="upate" method="post">
-        <button class="btn btn-primary" asp-page-handler="Update" metho>Update</button>
-        @if(!Model.SpotifyAuthorized || !(Model.Error == "")){
-            <button class="btn btn-primary" asp-page-handler="Auth">Authorize spotify</button>
-        }
-   </form> 
+   <div>
+    <form method="post" style="display: inline;">
+        @* todo : only display when needed (e.g. error in update or not authorized yet) *@
+        <button class="btn btn-primary" asp-page-handler="Auth">Authorize spotify</button>
+    </form>
+        <button id="update-button" class="btn btn-primary" onclick="requestUpdate()">Update</button>
+        <div class="progress" style="visibility: hidden;">
+            <div class="progress-bar progress-bar-striped progress-bar-animated" id="update-progress-bar" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+        @Html.AntiForgeryToken()
+   </div> 
 </p>
 @if(Model.Error != ""){
 <div class="alert alert-danger" role="alert">
     @Model.Error
 </div>
 }
+<div id="xhr-error" class="alert alert-danger" role="alert" style="display: none;">
+    Error fetching data from spotify. Try reauthorizing.
+    <button class="btn btn-primary" asp-page-handler="Auth">Reauthorize spotify</button>
+</div>
 <table class="table">
     <thead>
         <tr>
@@ -29,7 +38,7 @@
                 @Html.DisplayNameFor(model => model.Playlists[0].SpotifyOwnerName)
             </th>
             <th></th>
-        </tr>
+        </tr>        @* <button class="btn btn-primary" asp-page-handler="Update" onclick="displayProgress()">Update</button> *@
     </thead>
     <tbody>
 @foreach (var item in Model.Playlists) {
@@ -38,12 +47,59 @@
                 @Html.DisplayFor(modelItem => item.Name)
             </td>
             <td>
-                @Html.DisplayFor(modelItem => item.SpotifyOwnerName)
+                @Html.DisplayFor(modelItem => item.SpotifyOwnerName) 
             </td>
             <td>
                 <a asp-page="/Playlists/Details" asp-route-id="@item.Id">Details</a> 
             </td>
         </tr>
 }
-    </tbody>
+    </tbodya>
 </table>
+
+<script>
+    var progressInterval;
+function requestUpdate(){
+    const xhttp_update = new XMLHttpRequest();
+    
+    const bar = document.getElementById("update-progress-bar");
+    bar.parentElement.style.visibility = "visible";
+    const antiForgeryToken = document.querySelector("input[name='__RequestVerificationToken']").getAttribute("value");
+
+    const button = document.getElementById("update-button");
+    button.disabled = true;
+
+    xhttp_update.onreadystatechange = function(){
+        if(this.readyState == 2 && this.status == 200){
+            bar.style.width = "10%";
+        } else if (this.readyState == 4 && this.status == 200) {
+            bar.style.width = "100%";
+            bar.classList.remove("progress-bar-striped");
+            if(this.responseText == "1"){
+                document.getElementById("xhr-error").style.display = "block";
+            }
+        }
+        if(this.readyState == 4){
+            clearInterval(progressInterval);
+        }
+    }
+    xhttp_update.open("POST", "MyPlaylists?handler=Update", true);
+    xhttp_update.setRequestHeader("XSRF-TOKEN", antiForgeryToken);
+    xhttp_update.send();
+
+    progressInterval = setInterval(
+        function(){
+            const xhttp_progress = new XMLHttpRequest();
+            xhttp_progress.onreadystatechange = function (){
+                if(this.readyState == 4 && this.status == 200){
+                    bar.style.width = this.responseText;
+                }
+            };
+            xhttp_progress.open("GET", "MyPlaylists?handler=Progress", true);
+            xhttp_progress.setRequestHeader("XSRF-TOKEN", antiForgeryToken);
+            xhttp_progress.send();
+        }, 
+        1000  
+    ); 
+}
+</script>

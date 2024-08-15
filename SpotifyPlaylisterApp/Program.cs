@@ -170,6 +170,9 @@ builder.Services.AddSingleton<IJsonParser<PlaylistData>, PlaylistParser>();
 builder.Services.AddSingleton<IJsonParser<PlaylistIdList>, PlaylistIdParser>();
 builder.Services.AddSingleton<IJsonParser<PlaylistTracksData>, PlaylistTracksParser>();
 
+//for xhr requests
+builder.Services.AddAntiforgery(o => o.HeaderName = "XSRF-TOKEN");
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
